@@ -9,6 +9,7 @@ from aiogram.exceptions import (
 from aiogram.types import ErrorEvent
 from aiogram.types import User as AiogramUser
 from aiogram.utils.formatting import Bold, Text
+from aiogram_dialog.api.exceptions import UnknownState
 
 from app.core.enums import MiddlewareEventType
 
@@ -29,9 +30,9 @@ class ErrorMiddleware(EventTypedMiddleware):
         event: ErrorEvent,
         data: dict[str, Any],
     ) -> Any:
-        aiogram_user: Optional[AiogramUser]
+        aiogram_user: Optional[AiogramUser] = None
 
-        if event.update.message.from_user:
+        if event.update.message:
             aiogram_user = event.update.message.from_user
         elif event.update.callback_query:
             aiogram_user = event.update.callback_query.from_user
@@ -43,6 +44,8 @@ class ErrorMiddleware(EventTypedMiddleware):
             logger.warning(f"[User:{aiogram_user.id} ({aiogram_user.full_name})] Bad request")
         elif isinstance(event.exception, TelegramNotFound):
             logger.warning(f"[User:{aiogram_user.id} ({aiogram_user.full_name})] Not found")
+        elif isinstance(event.exception, UnknownState):
+            logger.warning(f"[User:{aiogram_user.id} ({aiogram_user.full_name})] Unknown state")
         else:
             logger.exception(f"Update: {event.update}\nException: {event.exception}")
 

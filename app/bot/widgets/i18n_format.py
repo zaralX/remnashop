@@ -32,14 +32,14 @@ def default_format_text(text: str, data: Values) -> str:
     return text.format_map(data)
 
 
-class I18NFormat(Text):
-    def __init__(self, text: str, when: WhenCondition = None) -> None:
+class I18nFormat(Text):
+    def __init__(self, key: str, when: WhenCondition = None) -> None:
         super().__init__(when)
-        self.text = text
+        self.key = key
 
     async def _render_text(self, data: dict, manager: DialogManager) -> str:
         format_text = manager.middleware_data.get(
             I18N_FORMAT_KEY,
             default_format_text,
         )
-        return collapse_closing_tags(format_text(self.text, data))
+        return collapse_closing_tags(format_text(self.key, data))

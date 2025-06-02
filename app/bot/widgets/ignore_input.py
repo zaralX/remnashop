@@ -8,7 +8,7 @@ class IgnoreInput(BaseInput):
         self,
         message: Message,
         dialog: DialogProtocol,
-        dialog_manager: DialogManager,
+        manager: DialogManager,
     ) -> bool:
-        dialog_manager.show_mode = ShowMode.NO_UPDATE
+        manager.show_mode = ShowMode.NO_UPDATE
         return True

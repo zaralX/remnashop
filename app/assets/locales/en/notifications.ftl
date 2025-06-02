@@ -1,2 +1,2 @@
-ntf_error_unknown_state =
+ntf-error-unknown-state =
     ⚠️ Error: unknown state. Dialog restarted!

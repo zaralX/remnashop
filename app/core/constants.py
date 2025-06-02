@@ -11,6 +11,7 @@ RESOURCE_I18N = ["messages.ftl", "buttons.ftl", "notifications.ftl", "popups.ftl
 
 # Keys for aiogram data
 MIDDLEWARE_DATA_KEY = "middleware_data"
+AUDIT_KEY = "audit"
 USER_KEY = "user"
 USER_SERVICE_KEY = "user_service"
 THROTTLING_KEY = "throttling_key"

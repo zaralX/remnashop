@@ -12,6 +12,7 @@ from app.db.models import User
 
 logger = logging.getLogger(__name__)
 router = Router()
+I18nFormatter = Callable[[str, Optional[dict[str, Any]]], str]
 
 
 @router.message(CommandStart())
@@ -19,12 +20,11 @@ async def command_start_handler(
     message: Message,
     user: User,
     dialog_manager: DialogManager,
-    i18n_format: Callable[[str, Optional[dict[str, Any]]], str],
 ) -> None:
     logger.info(f"[User:{user.telegram_id} ({user.name})] Opened menu")
 
     await dialog_manager.start(
-        MenuState.menu,
+        MenuState.main,
         mode=StartMode.RESET_STACK,
         show_mode=ShowMode.DELETE_AND_SEND,
     )
@@ -35,28 +35,17 @@ async def unknown_state_error_handler(
     event: ErrorEvent,
     message: Message,
     dialog_manager: DialogManager,
-    i18n_format: Callable[[str, Optional[dict[str, Any]]], str],
+    i18n_format: I18nFormatter,
     user: User,
 ) -> None:
     logger.warning(f"[User:{user.telegram_id} ({user.name})] Restarting dialog")
 
-    await message.answer(i18n_format("ntf_error_unknown_state"))  # TODO: notification service
-
-    await command_start_handler(
-        message=message,
-        user=user,
-        dialog_manager=dialog_manager,
-        i18n_format=i18n_format,
-    )
+    await message.answer(i18n_format("ntf-error-unknown-state"))  # TODO: notification service
+    await command_start_handler(message=message, user=user, dialog_manager=dialog_manager)
 
 
 @router.message(Command("test"))
-async def command_test_handler(
-    message: Message,
-    user: User,
-    dialog_manager: DialogManager,
-    i18n_format: Callable[[str, Optional[dict[str, Any]]], str],
-) -> None:
+async def command_test_handler(message: Message, user: User) -> None:
     logger.info(f"[User:{user.telegram_id} ({user.name})] Test command executed")
 
     raise UnknownState("test_state")

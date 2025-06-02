@@ -4,8 +4,7 @@ from typing import Any, Awaitable, Callable, Optional, Union
 from aiogram.types import CallbackQuery, ErrorEvent, Message
 from fluent.runtime import FluentLocalization
 
-from app.bot.widgets.i18n_format import I18N_FORMAT_KEY
-from app.core.constants import USER_KEY
+from app.core.constants import I18N_FORMAT_KEY, USER_KEY
 from app.core.enums import Locale, MiddlewareEventType
 from app.db.models import User
 

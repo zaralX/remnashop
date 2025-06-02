@@ -45,11 +45,12 @@ class ThrottlingMiddleware(EventTypedMiddleware):
         event: Union[Message, CallbackQuery],
         data: dict[str, Any],
     ) -> Any:
-        if event.successful_payment:  # TODO: check payment
-            logger.debug("SuccessfulPayment event skipping throttling")
-            return await handler(event, data)
+        aiogram_user: Optional[AiogramUser] = None
 
-        aiogram_user: Optional[AiogramUser] = event.from_user
+        if isinstance(event, (CallbackQuery)):
+            aiogram_user = event.from_user
+        elif isinstance(event, (Message)):
+            aiogram_user = event.from_user
 
         if aiogram_user is None:
             return await handler(event, data)

@@ -1,0 +1,329 @@
+from aiogram_dialog import Dialog, Window
+from aiogram_dialog.widgets.kbd import Button, Row, Start, SwitchTo
+
+from app.bot.conditions import is_dev
+from app.bot.states import DashboardState, MenuState
+from app.bot.widgets import Audit, Banner, I18nFormat, IgnoreInput
+from app.core.enums import BannerName
+
+dashboard = Window(
+    Banner(BannerName.DEFAULT),
+    I18nFormat("msg-dashboard"),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-dashboard-statistics"),
+            id="dashboard.statistics",
+            state=DashboardState.statistics,
+        ),
+        SwitchTo(
+            I18nFormat("btn-dashboard-users"),
+            id="dashboard.users",
+            state=DashboardState.users,
+        ),
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-dashboard-broadcast"),
+            id="dashboard.broadcast",
+            state=DashboardState.broadcast,
+        ),
+        SwitchTo(
+            I18nFormat("btn-dashboard-promocodes"),
+            id="dashboard.promocodes",
+            state=DashboardState.promocodes,
+        ),
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-dashboard-maintenance"),
+            id="dashboard.maintenance",
+            state=DashboardState.maintenance,
+        ),
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-dashboard-remnawave"),
+            id="dashboard.remnawave",
+            state=DashboardState.remnawave,
+        ),
+        SwitchTo(
+            I18nFormat("btn-dashboard-remnashop"),
+            id="dashboard.remnashop",
+            state=DashboardState.remnashop,
+        ),
+        when=is_dev,
+    ),
+    Row(
+        Start(
+            I18nFormat("btn-back-menu"),
+            id="back.menu",
+            state=MenuState.main,
+        )
+    ),
+    IgnoreInput(),
+    state=DashboardState.main,
+)
+
+statistics = Window(
+    Banner(BannerName.DEFAULT),
+    I18nFormat("msg-dashboard-statistics"),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-back"),
+            id="back.dashboard",
+            state=DashboardState.main,
+        )
+    ),
+    IgnoreInput(),
+    state=DashboardState.statistics,
+)
+
+users = Window(
+    Banner(BannerName.DEFAULT),
+    I18nFormat("msg-dashboard-users"),
+    Row(
+        Button(
+            I18nFormat("btn-users-search"),
+            id="users.search",
+        )
+    ),
+    Row(
+        Button(
+            I18nFormat("btn-users-recent-registered"),
+            id="users.recent_registered",
+        )
+    ),
+    Row(
+        Button(
+            I18nFormat("btn-users-recent-activity"),
+            id="users.recent_activity",
+        )
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-users-banlist"),
+            id="users.banlist",
+            state=DashboardState.banlist,
+        )
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-back"),
+            id="back.dashboard",
+            state=DashboardState.main,
+        )
+    ),
+    IgnoreInput(),
+    state=DashboardState.users,
+)
+
+banlist = Window(
+    Banner(BannerName.DEFAULT),
+    I18nFormat("msg-users-banlist"),
+    Row(
+        Button(
+            I18nFormat("btn-banlist-unblock-all"),
+            id="banlist.unblock_all",
+        )
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-back"),
+            id="back.dashboard",
+            state=DashboardState.users,
+        )
+    ),
+    IgnoreInput(),
+    state=DashboardState.banlist,
+)
+
+broadcast = Window(
+    Banner(BannerName.DEFAULT),
+    I18nFormat("msg-dashboard-broadcast"),
+    Row(
+        Button(
+            I18nFormat("btn-broadcast-all"),
+            id="broadcast.all",
+        ),
+        Button(
+            I18nFormat("btn-broadcast-user"),
+            id="broadcast.user",
+        ),
+    ),
+    Row(
+        Button(
+            I18nFormat("btn-broadcast-has-subscription"),
+            id="broadcast.has_subscription",
+        ),
+        Button(
+            I18nFormat("btn-broadcast-no-subscription"),
+            id="broadcast.no_subscription",
+        ),
+    ),
+    Row(
+        Button(
+            I18nFormat("btn-broadcast-expired"),
+            id="broadcast.expired",
+        )
+    ),
+    Row(
+        Button(
+            I18nFormat("btn-broadcast-last-message"),
+            id="broadcast.last",
+        )
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-back"),
+            id="back.dashboard",
+            state=DashboardState.main,
+        )
+    ),
+    IgnoreInput(),
+    state=DashboardState.broadcast,
+)
+
+promocodes = Window(
+    Banner(BannerName.DEFAULT),
+    I18nFormat("msg-dashboard-promocodes"),
+    Row(
+        Button(
+            I18nFormat("btn-promocodes-list"),
+            id="promocodes.list",
+        )
+    ),
+    Row(
+        Button(
+            I18nFormat("btn-promocodes-create"),
+            id="promocodes.create",
+        ),
+        Button(
+            I18nFormat("btn-promocodes-delete"),
+            id="promocodes.delete",
+        ),
+        Button(
+            I18nFormat("btn-promocodes-edit"),
+            id="promocodes.edit",
+        ),
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-back"),
+            id="back.dashboard",
+            state=DashboardState.main,
+        )
+    ),
+    IgnoreInput(),
+    state=DashboardState.promocodes,
+)
+
+maintenance = Window(
+    Banner(BannerName.DEFAULT),
+    I18nFormat("msg-dashboard-maintenance"),
+    Row(
+        Button(
+            I18nFormat("btn-maintenance-global"),
+            id="maintenance.global",
+        ),
+        Button(
+            I18nFormat("btn-maintenance-purchase"),
+            id="maintenance.purchase",
+        ),
+    ),
+    Row(
+        Button(
+            I18nFormat("btn-maintenance-off"),
+            id="maintenance.off",
+        )
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-back"),
+            id="back.dashboard",
+            state=DashboardState.main,
+        )
+    ),
+    IgnoreInput(),
+    state=DashboardState.maintenance,
+)
+
+remnawave = Window(
+    Banner(BannerName.DEFAULT),
+    I18nFormat("msg-dashboard-remnawave"),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-back"),
+            id="back.dashboard",
+            state=DashboardState.main,
+        )
+    ),
+    IgnoreInput(),
+    state=DashboardState.remnawave,
+)
+
+remnashop = Window(
+    Banner(BannerName.DEFAULT),
+    I18nFormat("msg-dashboard-remnashop"),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-remnashop-admins"),
+            id="remnashop.admins",
+            state=DashboardState.admins,
+        )
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-remnashop-referral"),
+            id="remnashop.referral",
+            state=DashboardState.referral,
+        ),
+        SwitchTo(
+            I18nFormat("btn-remnashop-ads"),
+            id="remnashop.ads",
+            state=DashboardState.ads,
+        ),
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-remnashop-plans"),
+            id="remnashop.plans",
+            state=DashboardState.plans,
+        ),
+        SwitchTo(
+            I18nFormat("btn-remnashop-notifications"),
+            id="remnashop.notifications",
+            state=DashboardState.notifications,
+        ),
+    ),
+    Row(
+        Button(
+            I18nFormat("btn-remnashop-logs"),
+            id="remnashop.logs",
+        ),
+        Button(
+            I18nFormat("btn-remnashop-audit"),
+            id="remnashop.audit",
+        ),
+    ),
+    Row(
+        SwitchTo(
+            I18nFormat("btn-back"),
+            id="back.dashboard",
+            state=DashboardState.main,
+        )
+    ),
+    IgnoreInput(),
+    state=DashboardState.remnashop,
+)
+
+dialog = Dialog(
+    dashboard,
+    statistics,
+    users,
+    banlist,
+    broadcast,
+    promocodes,
+    maintenance,
+    remnawave,
+    remnashop,
+)

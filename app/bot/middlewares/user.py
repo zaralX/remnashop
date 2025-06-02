@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Union
 
 from aiogram.types import CallbackQuery, ErrorEvent, Message
 from aiogram.types import User as AiogramUser
-from aiogram_i18n import I18nMiddleware
 
+from app.bot.middlewares import I18nMiddleware
 from app.core.config import AppConfig
 from app.core.constants import (
     CONFIG_KEY,
@@ -42,11 +42,17 @@ class UserMiddleware(EventTypedMiddleware):
         event: Union[Message, CallbackQuery, ErrorEvent],
         data: dict[str, Any],
     ) -> Optional[Any]:
-        aiogram_user: Optional[AiogramUser] = (
-            event.from_user
-            if isinstance(event, (Message, CallbackQuery))
-            else event.update.message.from_user
-        )
+        aiogram_user: Optional[AiogramUser] = None
+
+        if isinstance(event, (CallbackQuery)):
+            aiogram_user = event.from_user
+        elif isinstance(event, (Message)):
+            aiogram_user = event.from_user
+        elif isinstance(event, (ErrorEvent)):
+            if event.update.callback_query:
+                aiogram_user = event.update.callback_query.from_user
+            elif event.update.message:
+                aiogram_user = event.update.message.from_user
 
         if aiogram_user is None or aiogram_user.is_bot:
             return await handler(event, data)
