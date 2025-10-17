@@ -3,7 +3,7 @@ from typing import AsyncGenerator
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import WebhookInfo
-from dishka import AsyncContainer
+from dishka import AsyncContainer, Scope
 from fastapi import FastAPI
 from loguru import logger
 
@@ -13,8 +13,9 @@ from src.infrastructure.taskiq.tasks.notifications import (
     send_remnashop_notification_task,
     send_system_notification_task,
 )
-from src.services.access import AccessService
 from src.services.command import CommandService
+from src.services.payment_gateway import PaymentGatewayService
+from src.services.settings import SettingsService
 from src.services.webhook import WebhookService
 
 
@@ -24,9 +25,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     telegram_webhook_endpoint: TelegramWebhookEndpoint = app.state.telegram_webhook_endpoint
     container: AsyncContainer = app.state.dishka_container
 
-    webhook_service: WebhookService = await container.get(WebhookService)
-    command_service: CommandService = await container.get(CommandService)
-    access_service: AccessService = await container.get(AccessService)
+    async with container(scope=Scope.REQUEST) as startup_container:
+        webhook_service: WebhookService = await startup_container.get(WebhookService)
+        command_service: CommandService = await startup_container.get(CommandService)
+        settings_service: SettingsService = await startup_container.get(SettingsService)
+        gateway_service: PaymentGatewayService = await startup_container.get(PaymentGatewayService)
+
+        await gateway_service.create_default()
+        access_mode = await settings_service.get_access_mode()
+
+    await startup_container.close()
 
     allowed_updates = dispatcher.resolve_used_update_types()
     webhook_info: WebhookInfo = await webhook_service.setup(allowed_updates)
@@ -52,8 +60,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Privacy Mode - {states[not bot_info.can_read_all_group_messages]}")
     logger.info(f"Inline Mode  - {states[bot_info.supports_inline_queries]}")
     logger.info("-----------------------")
-
-    access_mode = await access_service.get_current_mode()
     logger.warning(f"Bot in access mode: '{access_mode}'")
 
     await send_system_notification_task.kiq(

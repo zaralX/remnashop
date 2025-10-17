@@ -2,7 +2,7 @@ from functools import wraps
 from typing import Any, Awaitable, Callable, Optional, ParamSpec, TypeVar, get_type_hints
 
 from loguru import logger
-from pydantic import TypeAdapter
+from pydantic import SecretStr, TypeAdapter
 from redis.asyncio import Redis
 from redis.typing import ExpiryT
 
@@ -11,6 +11,16 @@ from src.core.utils import json_utils
 
 T = TypeVar("T", bound=Any)
 P = ParamSpec("P")
+
+
+def prepare_for_cache(obj: Any) -> Any:
+    if isinstance(obj, SecretStr):
+        return obj.get_secret_value()
+    elif isinstance(obj, dict):
+        return {k: prepare_for_cache(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [prepare_for_cache(v) for v in obj]
+    return obj
 
 
 def redis_cache(
@@ -26,6 +36,7 @@ def redis_cache(
             self: Any = args[0]
             redis: Redis = self.redis_client
 
+            # Build cache key
             key_parts = [
                 "cache",
                 prefix or func.__name__,
@@ -36,24 +47,23 @@ def redis_cache(
 
             try:
                 cached_value: Optional[bytes] = await redis.get(key)
-
                 if cached_value is not None:
-                    logger.debug(f"Cache hit for key: {key}")
-                    # Decode the bytes and then parse the JSON string
-                    return type_adapter.validate_python(json_utils.decode(cached_value.decode()))
+                    logger.info(f"Cache hit: {key}")
+                    parsed = json_utils.decode(cached_value.decode())
+                    return type_adapter.validate_python(parsed)
 
-                logger.debug(f"Cache miss for key: {key}. Executing function")
+                logger.info(f"Cache miss: {key}. Executing function")
                 result: T = await func(*args, **kwargs)
 
-                # Serialize the result to a JSON string before caching
-                cached_result: str = json_utils.encode(type_adapter.dump_python(result))
-                await redis.setex(key, ttl, cached_result)
+                # Serialize and store result
+                safe_result = prepare_for_cache(type_adapter.dump_python(result))
+                await redis.setex(key, ttl, json_utils.encode(safe_result))
+                logger.info(f"Result cached: {key} (ttl={ttl})")
 
                 return result
 
             except Exception as exception:
-                logger.error(f"Cache operation failed for key '{key}': {exception}")
-                # Fallback to executing the function without caching
+                logger.warning(f"Cache operation failed for key '{key}': {exception}")
                 return await func(*args, **kwargs)
 
         return wrapper

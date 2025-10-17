@@ -10,7 +10,7 @@ from fluentogram import TranslatorRunner
 from loguru import logger
 
 from src.bot.filters import SuperDevFilter
-from src.core.utils.formatters import format_log_user
+from src.core.utils.formatters import format_user_log as log
 from src.infrastructure.database.models.dto import UserDto
 
 router = Router(name=__name__)
@@ -22,7 +22,7 @@ async def on_test_command(
     message: Message,
     user: UserDto,
 ) -> None:
-    logger.info(f"{format_log_user(user)} Test command executed")
+    logger.info(f"{log(user)} Test command executed")
 
     logger.critical(user.transactions)
     logger.critical(user.current_subscription)

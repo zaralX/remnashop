@@ -2,7 +2,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 
 def build_key(prefix: str, /, *parts: Any, **kw_parts: Any) -> str:
@@ -43,6 +43,8 @@ class StorageKey(BaseModel):
     def encode_value(cls, value: Any) -> str:
         if value is None:
             return "null"
+        if isinstance(value, SecretStr):
+            return value.get_secret_value()
         if isinstance(value, Enum):
             return str(value.value)
         if isinstance(value, UUID):

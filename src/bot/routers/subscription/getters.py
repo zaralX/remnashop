@@ -4,16 +4,21 @@ from aiogram_dialog import DialogManager
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 from fluentogram import TranslatorRunner
-from loguru import logger
 
 from src.core.constants import USER_KEY
 from src.core.enums import PurchaseType
 from src.core.utils.adapter import DialogDataAdapter
-from src.core.utils.formatters import i18n_format_days, i18n_format_expire_time, i18n_format_limit
+from src.core.utils.formatters import (
+    i18n_format_days,
+    i18n_format_expire_time,
+    i18n_format_limit,
+    i18n_format_traffic_limit,
+)
 from src.infrastructure.database.models.dto import PlanDto, PlanSnapshotDto, UserDto
 from src.services.payment_gateway import PaymentGatewayService
 from src.services.plan import PlanService
 from src.services.pricing import PricingService
+from src.services.settings import SettingsService
 
 
 @inject
@@ -53,8 +58,8 @@ async def plans_getter(
 @inject
 async def duration_getter(
     dialog_manager: DialogManager,
-    payment_gateway_service: FromDishka[PaymentGatewayService],
     i18n: FromDishka[TranslatorRunner],
+    settings_service: FromDishka[SettingsService],
     **kwargs: Any,
 ) -> dict[str, Any]:
     adapter = DialogDataAdapter(dialog_manager)
@@ -63,7 +68,7 @@ async def duration_getter(
     if not plan:
         return {}
 
-    currency = await payment_gateway_service.get_default_currency()
+    currency = await settings_service.get_default_currency()
     durations = []
 
     for duration in plan.durations:
@@ -81,7 +86,7 @@ async def duration_getter(
         "plan": plan.name,
         "type": plan.type,
         "devices": i18n_format_limit(plan.device_limit),
-        "traffic": i18n_format_limit(plan.traffic_limit),
+        "traffic": i18n_format_traffic_limit(plan.traffic_limit),
         "period": 0,
         "durations": durations,
         "final_amount": 0,
@@ -126,7 +131,7 @@ async def payment_method_getter(
         "plan": plan.name,
         "type": plan.type,
         "devices": i18n_format_limit(plan.device_limit),
-        "traffic": i18n_format_limit(plan.traffic_limit),
+        "traffic": i18n_format_traffic_limit(plan.traffic_limit),
         "period": i18n.get(key, **kw),
         "payment_methods": payment_methods,
         "final_amount": 0,
@@ -186,7 +191,7 @@ async def confirm_getter(
         "plan": plan.name,
         "type": plan.type,
         "devices": i18n_format_limit(plan.device_limit),
-        "traffic": i18n_format_limit(plan.traffic_limit),
+        "traffic": i18n_format_traffic_limit(plan.traffic_limit),
         "period": i18n.get(key, **kw),
         "payment_method": selected_payment_method,
         "final_amount": pricing.final_amount,
@@ -222,7 +227,7 @@ async def succees_payment_getter(
     return {
         "purchase_type": purchase_type,
         "plan_name": user.current_subscription.plan.name,
-        "traffic_limit": i18n_format_limit(user.current_subscription.plan.traffic_limit),
+        "traffic_limit": i18n_format_traffic_limit(user.current_subscription.plan.traffic_limit),
         "device_limit": i18n_format_limit(user.current_subscription.plan.device_limit),
         "expiry_time": expiry_time,
         "added_duration": i18n_format_days(user.current_subscription.plan.duration),

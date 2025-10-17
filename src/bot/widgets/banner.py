@@ -65,7 +65,6 @@ class Banner(StaticMedia):
         user: UserDto = manager.middleware_data[USER_KEY]
         config: AppConfig = manager.middleware_data[CONFIG_KEY]
 
-        # TODO: Check performance
         banner_path, banner_content_type = get_banner(
             name=self.banner_name,
             locale=user.language,

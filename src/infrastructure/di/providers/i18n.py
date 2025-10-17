@@ -4,6 +4,7 @@ from dishka import Provider, Scope, provide
 from dishka.integrations.aiogram import AiogramMiddlewareData
 from fluentogram import TranslatorHub, TranslatorRunner
 from fluentogram.storage import FileStorage
+from loguru import logger
 
 from src.core.config import AppConfig
 from src.core.constants import TRANSLATIONS_DIR, USER_KEY
@@ -29,6 +30,11 @@ class I18nProvider(Provider):
                 config.default_locale,
             )
 
+        logger.info(
+            f"[I18N] Loaded TranslatorHub with locales: {list(locales_map.keys())}, "
+            f"default={config.default_locale}"
+        )
+
         return TranslatorHub(locales_map, root_locale=config.default_locale, storage=storage)
 
     @provide(scope=Scope.REQUEST)
@@ -41,7 +47,13 @@ class I18nProvider(Provider):
         user: Optional[UserDto] = middleware_data.get(USER_KEY)
 
         if user:
+            logger.debug(
+                f"[I18N] Translator for user {user.telegram_id} with locale={user.language}"
+            )
             return hub.get_translator_by_locale(locale=user.language)
 
         else:
+            logger.debug(
+                f"[I18N] Translator for anonymous user with default locale={config.default_locale}"
+            )
             return hub.get_translator_by_locale(locale=config.default_locale)

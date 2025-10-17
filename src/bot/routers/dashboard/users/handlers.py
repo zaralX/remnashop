@@ -8,7 +8,7 @@ from loguru import logger
 
 from src.bot.states import DashboardUsers
 from src.core.constants import USER_KEY
-from src.core.utils.formatters import format_log_user
+from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
 from src.infrastructure.database.models.dto import UserDto
 from src.services.notification import NotificationService
@@ -32,25 +32,21 @@ async def on_user_search(
         return
 
     found_users = await user_service.search_users(message)
+    search_query = message.text.strip() if message.text else None
 
     if not found_users:
-        search_query = message.text.strip() if message.text else None
-        logger.info(f"{format_log_user(user)} User search for '{search_query}' yielded no results")
+        logger.info(f"{log(user)} Search for '{search_query}' yielded no results")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-user-not-found"),
         )
     elif len(found_users) == 1:
         target_user = found_users[0]
-        logger.info(
-            f"{format_log_user(user)} Successfully searched "
-            f"for single user {format_log_user(target_user)}"
-        )
+        logger.info(f"{log(user)} Searched user -> {log(target_user)}")
         await start_user_window(manager=dialog_manager, target_telegram_id=target_user.telegram_id)
     else:
-        search_query = message.text.strip() if message.text else None
         logger.info(
-            f"{format_log_user(user)} User search for '{search_query}' "
+            f"{log(user)} Search for '{search_query}' "
             f"found {len(found_users)} results. Proceeding to selection state"
         )
         await dialog_manager.start(
@@ -59,7 +55,7 @@ async def on_user_search(
         )
 
 
-async def on_user_selected(
+async def on_user_select(
     callback: CallbackQuery,
     widget: Select[int],
     dialog_manager: DialogManager,
@@ -67,7 +63,7 @@ async def on_user_selected(
 ) -> None:
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
-    logger.debug(f"{format_log_user(user)} User '{user_selected}' selected")
+    logger.info(f"{log(user)} User id '{user_selected}' selected")
     await start_user_window(manager=dialog_manager, target_telegram_id=user_selected)
 
 
@@ -84,5 +80,5 @@ async def on_unblock_all(
     for blocked_user in blocked_users:
         await user_service.set_block(user=blocked_user, blocked=False)
 
-    logger.warning(f"{format_log_user(user)} Unblocked all users")
+    logger.warning(f"{log(user)} Unblocked all users")
     await dialog_manager.start(state=DashboardUsers.BLACKLIST, mode=StartMode.RESET_STACK)

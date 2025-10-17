@@ -10,15 +10,16 @@ from pydantic import SecretStr
 from src.bot.states import RemnashopGateways
 from src.core.constants import USER_KEY
 from src.core.enums import Currency
-from src.core.utils.formatters import format_log_user
+from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
 from src.infrastructure.database.models.dto import UserDto
 from src.services.notification import NotificationService
 from src.services.payment_gateway import PaymentGatewayService
+from src.services.settings import SettingsService
 
 
 @inject
-async def on_gateway_selected(
+async def on_gateway_select(
     callback: CallbackQuery,
     widget: Button,
     sub_manager: SubManager,
@@ -30,9 +31,10 @@ async def on_gateway_selected(
     gateway = await payment_gateway_service.get(gateway_id)
 
     if not gateway:
+        logger.critical(f"{log(user)} Attempted to select non-existent gateway '{gateway_id}'")
         return
 
-    logger.debug(f"{format_log_user(user)} Gateway '{gateway_id}' selected")
+    logger.info(f"{log(user)} Gateway '{gateway_id}' selected")
 
     if not gateway.settings:
         await notification_service.notify_user(
@@ -58,14 +60,14 @@ async def on_gateway_test(
     gateway = await payment_gateway_service.get(gateway_id)
 
     if not gateway:
+        logger.critical(f"{log(user)} Attempted to test non-existent gateway '{gateway_id}'")
         return
 
-    logger.debug(f"{format_log_user(user)} Testing gateway '{gateway_id}'")
+    logger.info(f"{log(user)} Testing gateway '{gateway_id}'")
 
     try:
-        payment_link = await payment_gateway_service.create_test_payment(gateway.type)
-
-        logger.info("Test payment successful")
+        payment_link = await payment_gateway_service.create_test_payment(user, gateway.type)
+        logger.info(f"{log(user)} Test payment successful for gateway '{gateway_id}'")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(
@@ -75,7 +77,9 @@ async def on_gateway_test(
         )
 
     except Exception as exception:
-        logger.error(f"Test payment failed. Error: {exception}")
+        logger.exception(
+            f"{log(user)} Test payment failed for gateway '{gateway_id}'. Exception: {exception}"
+        )
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-gateway-test-payment-error"),
@@ -97,10 +101,11 @@ async def on_active_toggle(
     gateway = await payment_gateway_service.get(gateway_id)
 
     if not gateway:
+        logger.critical(f"{log(user)} Attempted to toggle non-existent gateway '{gateway_id}'")
         return
 
     if gateway.settings and not gateway.settings.is_configure:
-        logger.warning(f"{format_log_user(user)} Gateway '{gateway_id}' is not configured")
+        logger.warning(f"{log(user)} Gateway '{gateway_id}' is not configured")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-gateway-not-configured"),
@@ -108,17 +113,19 @@ async def on_active_toggle(
         return
 
     gateway.is_active = not gateway.is_active
-    logger.debug(f"{format_log_user(user)} Toggling active state for gateway '{gateway_id}'")
+    logger.info(f"{log(user)} Toggled active state for gateway '{gateway_id}'")
     await payment_gateway_service.update(gateway)
 
 
-async def on_field_selected(
+async def on_field_select(
     callback: CallbackQuery,
     widget: Select,
     dialog_manager: DialogManager,
     selected_field: str,
 ) -> None:
+    user: UserDto = dialog_manager.middleware_data[USER_KEY]
     dialog_manager.dialog_data["selected_field"] = selected_field
+    logger.info(f"{log(user)} Selected field '{selected_field}' for editing")
     await dialog_manager.switch_to(state=RemnashopGateways.FIELD)
 
 
@@ -136,7 +143,7 @@ async def on_field_input(
     selected_field = dialog_manager.dialog_data["selected_field"]
 
     if message.text is None:
-        logger.warning(f"{format_log_user(user)} Provided empty input for field '{selected_field}'")
+        logger.warning(f"{log(user)} Empty input for field '{selected_field}'")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-gateway-field-wrong-value"),
@@ -146,33 +153,29 @@ async def on_field_input(
     gateway = await payment_gateway_service.get(gateway_id)
 
     if not gateway or not gateway.settings:
-        logger.error(
-            f"{format_log_user(user)} Attempted to update non-existent "
-            f"gateway or settings for gateway '{gateway_id}'"
-        )
+        logger.error(f"{log(user)} Attempted update of non-existent gateway '{gateway_id}'")
         await dialog_manager.switch_to(state=RemnashopGateways.MAIN)
         return
 
     input_value = message.text
 
-    if selected_field == "key":
+    if selected_field in ["api_key", "secret_key"]:
         input_value = SecretStr(input_value)  # type: ignore[assignment]
 
     setattr(gateway.settings, selected_field, input_value)
-
-    logger.debug(f"{format_log_user(user)} Changed '{selected_field}' for gateway '{gateway_id}'")
+    logger.info(f"{log(user)} Updated '{selected_field}' for gateway '{gateway_id}'")
     await payment_gateway_service.update(gateway)
     await dialog_manager.switch_to(state=RemnashopGateways.SETTINGS)
 
 
 @inject
-async def on_default_currency_selected(
+async def on_default_currency_select(
     callback: CallbackQuery,
     widget: Select[Currency],
     dialog_manager: DialogManager,
     selected_currency: Currency,
-    payment_gateway_service: FromDishka[PaymentGatewayService],
+    settings_service: FromDishka[SettingsService],
 ) -> None:
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
-    logger.debug(f"{format_log_user(user)} Set default currency '{selected_currency}'")
-    await payment_gateway_service.set_default_currency(selected_currency)
+    logger.info(f"{log(user)} Set default currency '{selected_currency}'")
+    await settings_service.set_default_currency(selected_currency)

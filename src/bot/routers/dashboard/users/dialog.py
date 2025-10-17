@@ -14,7 +14,7 @@ from .getters import (
     recent_registered_getter,
     search_results_getter,
 )
-from .handlers import on_unblock_all, on_user_search, on_user_selected
+from .handlers import on_unblock_all, on_user_search, on_user_select
 
 users = Window(
     Banner(BannerName.DASHBOARD),
@@ -84,7 +84,7 @@ recent_registered = Window(
             item_id_getter=lambda item: item.telegram_id,
             items="recent_registered_users",
             type_factory=int,
-            on_click=on_user_selected,
+            on_click=on_user_select,
         ),
     ),
     Row(
@@ -109,7 +109,7 @@ recent_activity = Window(
             item_id_getter=lambda item: item.telegram_id,
             items="recent_activity_users",
             type_factory=int,
-            on_click=on_user_selected,
+            on_click=on_user_select,
         ),
     ),
     Row(
@@ -134,7 +134,7 @@ search_results = Window(
             item_id_getter=lambda item: item.telegram_id,
             items="found_users",
             type_factory=int,
-            on_click=on_user_selected,
+            on_click=on_user_select,
         ),
         id="scroll",
         width=1,
@@ -164,7 +164,7 @@ blacklist = Window(
             item_id_getter=lambda item: item.telegram_id,
             items="blocked_users",
             type_factory=int,
-            on_click=on_user_selected,
+            on_click=on_user_select,
         ),
         id="scroll",
         width=1,

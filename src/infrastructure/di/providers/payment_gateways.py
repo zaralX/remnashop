@@ -32,13 +32,15 @@ class PaymentGatewaysProvider(Provider):
     def get_gateway_factory(self, bot: Bot) -> PaymentGatewayFactory:
         def create_gateway(gateway: PaymentGatewayDto) -> BasePaymentGateway:
             gateway_type = gateway.type
+            logger.debug(f"[PAYMENT_GATEWAY:{gateway_type}] create_gateway called")
 
             if gateway_type in self._cached_gateways:
                 cached_gateway = self._cached_gateways[gateway_type]
 
                 if cached_gateway.gateway != gateway:
                     logger.warning(
-                        f"Gateway data for {gateway_type} has changed. Re-initializing the gateway"
+                        f"[PAYMENT_GATEWAY:{gateway_type}] Gateway data changed. "
+                        f"Re-initializing the gateway"
                     )
                     del self._cached_gateways[gateway_type]
 
@@ -46,10 +48,11 @@ class PaymentGatewaysProvider(Provider):
                 gateway_instance = GATEWAY_MAP.get(gateway_type)
 
                 if not gateway_instance:
+                    logger.error(f"[PAYMENT_GATEWAY:{gateway_type}] Unknown gateway type")
                     raise ValueError(f"Unknown gateway type: {gateway_type}")
 
                 self._cached_gateways[gateway_type] = gateway_instance(gateway=gateway, bot=bot)
-                logger.debug(f"Initialized new gateway instance for {gateway_type}")
+                logger.debug(f"[PAYMENT_GATEWAY:{gateway_type}] Initialized new gateway instance")
 
             return self._cached_gateways[gateway_type]
 

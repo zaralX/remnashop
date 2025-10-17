@@ -15,11 +15,24 @@ class PaymentGateway(BaseSql):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     type: Mapped[PaymentGatewayType] = mapped_column(
-        Enum(PaymentGatewayType),
+        Enum(
+            PaymentGatewayType,
+            name="payment_gateway_type",
+            create_constraint=True,
+            validate_strings=True,
+        ),
         nullable=False,
         unique=True,
     )
 
-    currency: Mapped[Currency] = mapped_column(Enum(Currency), nullable=False)
+    currency: Mapped[Currency] = mapped_column(
+        Enum(
+            Currency,
+            name="currency",
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False)
     settings: Mapped[Optional[AnyGatewaySettingsDto]] = mapped_column(JSON, nullable=True)

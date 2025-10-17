@@ -3,8 +3,10 @@ from aiogram import Router
 from src.bot.middlewares.base import EventTypedMiddleware
 
 from .access import AccessMiddleware
+from .channel import ChannelMiddleware
 from .error import ErrorMiddleware
 from .garbage import GarbageMiddleware
+from .rules import RulesMiddleware
 from .throttling import ThrottlingMiddleware
 from .user import UserMiddleware
 
@@ -18,7 +20,9 @@ __all__ = [
 def setup_middlewares(router: Router) -> None:
     outer_middlewares: list[EventTypedMiddleware] = [
         ErrorMiddleware(),
+        RulesMiddleware(),
         UserMiddleware(),
+        ChannelMiddleware(),
         ThrottlingMiddleware(),
         AccessMiddleware(),
     ]

@@ -18,9 +18,9 @@ from .base import TrackableDto
 
 
 class PriceDetailsDto(TrackableDto):
-    original_amount: Decimal
-    discount_percent: int
-    final_amount: Decimal
+    original_amount: Decimal = Decimal(1)
+    discount_percent: int = 0
+    final_amount: Decimal = Decimal(1)
 
     @property
     def is_free(self) -> bool:
@@ -34,6 +34,7 @@ class BaseTransactionDto(TrackableDto):
     status: TransactionStatus
     purchase_type: PurchaseType
     gateway_type: PaymentGatewayType
+    is_test: bool = False
 
     pricing: PriceDetailsDto
     currency: Currency

@@ -4,9 +4,11 @@ from typing import Any
 from aiogram.types import BufferedInputFile
 from dishka import FromDishka
 from dishka.integrations.taskiq import inject
+from loguru import logger
+from remnawave.models.webhook import UserDto as RemnaUserDto
 
 from src.core.constants import BATCH_DELAY, BATCH_SIZE
-from src.core.enums import MediaType, SystemNotificationType
+from src.core.enums import MediaType, SystemNotificationType, UserNotificationType
 from src.core.utils.iterables import chunked
 from src.core.utils.message_payload import MessagePayload
 from src.infrastructure.database.models.dto.user import UserDto
@@ -45,14 +47,14 @@ async def send_remnashop_notification_task(
 @broker.task
 @inject
 async def send_error_notification_task(
-    update_id: int,
+    error_id: int,
     traceback_str: str,
     i18n_kwargs: dict[str, Any],
     notification_service: FromDishka[NotificationService],
 ) -> None:
     file_data = BufferedInputFile(
         file=traceback_str.encode(),
-        filename=f"error_{update_id}.txt",
+        filename=f"error_{error_id}.txt",
     )
 
     await notification_service.notify_super_dev(
@@ -69,7 +71,7 @@ async def send_error_notification_task(
 
 @broker.task
 @inject
-async def send_access_denied_notifications_task(
+async def send_access_denied_notification_task(
     user: UserDto,
     i18n_key: str,
     notification_service: FromDishka[NotificationService],
@@ -99,3 +101,59 @@ async def send_access_opened_notifications_task(
                 ),
             )
         await asyncio.sleep(BATCH_DELAY)
+
+
+@broker.task
+@inject
+async def send_subscription_expire_notification_task(
+    remna_user: RemnaUserDto,
+    ntf_type: UserNotificationType,
+    i18n_kwargs: dict[str, Any],
+    user_service: FromDishka[UserService],
+    notification_service: FromDishka[NotificationService],
+) -> None:
+    if not remna_user.telegram_id:
+        logger.warning(
+            f"Skipping user notification for UUID {remna_user.uuid}: missing telegram_id"
+        )
+        return
+
+    if ntf_type == UserNotificationType.EXPIRES_IN_3_DAYS:
+        i18n_key = "ntf-event-user-expires"
+        i18n_kwargs_extra = {"value": 3}
+    elif ntf_type == UserNotificationType.EXPIRES_IN_2_DAYS:
+        i18n_key = "ntf-event-user-expires"
+        i18n_kwargs_extra = {"value": 2}
+    elif ntf_type == UserNotificationType.EXPIRES_IN_1_DAYS:
+        i18n_key = "ntf-event-user-expires"
+        i18n_kwargs_extra = {"value": 1}
+    elif ntf_type == UserNotificationType.EXPIRED:
+        i18n_key = "ntf-event-user-expired"
+        i18n_kwargs_extra = {}
+
+    user = await user_service.get(remna_user.telegram_id)
+
+    await notification_service.notify_user(
+        user=user,
+        payload=MessagePayload(
+            i18n_key=i18n_key,
+            i18n_kwargs={**i18n_kwargs, **i18n_kwargs_extra},
+            auto_delete_after=None,
+            add_close_button=True,
+        ),
+        ntf_type=ntf_type,
+    )
+
+
+@broker.task
+@inject
+async def send_test_transaction_notification_task(
+    user: UserDto,
+    notification_service: FromDishka[NotificationService],
+) -> None:
+    await notification_service.notify_user(
+        user=user,
+        payload=MessagePayload(
+            i18n_key="ntf-gateway-test-payment-confirm",
+        ),
+    )

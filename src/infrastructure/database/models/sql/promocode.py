@@ -24,7 +24,12 @@ class Promocode(BaseSql, TimestampMixin):
 
     code: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     reward_type: Mapped[PromocodeRewardType] = mapped_column(
-        Enum(PromocodeRewardType),
+        Enum(
+            PromocodeRewardType,
+            name="promocode_reward_type",
+            create_constraint=True,
+            validate_strings=True,
+        ),
         nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False)

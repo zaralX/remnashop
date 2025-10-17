@@ -19,7 +19,7 @@ dependencies = [
     "msgspec~=0.19.0",
     "pydantic-settings~=2.9.1",
     "redis~=6.2.0",
-    "remnawave==2.1.13",        #NOTE: Remnawave Panel >= 2.1.13
+    "remnawave~=2.1.19",
     "taskiq~=0.11.18",
     "taskiq-redis~=1.1.0",
     "uvicorn>=0.34.2",

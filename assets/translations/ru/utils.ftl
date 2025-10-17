@@ -47,13 +47,15 @@ role =
 
 
 # Units
-unit-byte = Б
-unit-kilobyte = КБ
-unit-megabyte = МБ
-unit-gigabyte = ГБ
-unit-terabyte = ТБ
+unit-unlimited = { unlimited }
 
-unit-second = { $value} { $value ->
+unit-byte = { $value } Б
+unit-kilobyte = { $value } КБ
+unit-megabyte = { $value } МБ
+unit-gigabyte = { $value } ГБ
+unit-terabyte = { $value } ТБ
+
+unit-second = { $value } { $value ->
     [one] секунда
     [few] секунды
     *[other] секунд
@@ -89,11 +91,6 @@ unit-year = { $value } { $value ->
     *[other] лет
 }
 
-unit-unlimited = { $value ->
-    [-1] { unlimited }
-    *[other] { $value }
-}
-
 
 # Types
 plan-type = { $plan_type -> 
@@ -119,4 +116,14 @@ access-mode = { $access_mode ->
     [PURCHASE] 🟠 Запрещены покупки
     [BLOCKED] 🔴 Запрещены любые действия
     *[OTHER] { $access_mode }
+}
+
+audience-type = { $audience_type ->
+    [ALL] Всем
+    [PLAN] По плану
+    [SUBSCRIBED] С подпиской
+    [UNSUBSCRIBED] Без подписки
+    [EXPIRED] Просроченным
+    [TRIAL] С пробником
+    *[OTHER] { $audience_type }
 }

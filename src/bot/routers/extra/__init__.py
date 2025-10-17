@@ -1,7 +1,8 @@
-from . import error, member, notification, payment, test
+from . import error, goto, member, notification, payment, test
 
 __all__ = [
     "error",
+    "goto",
     "member",
     "notification",
     "payment",

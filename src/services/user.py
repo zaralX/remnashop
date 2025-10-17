@@ -6,6 +6,7 @@ from aiogram.types import User as AiogramUser
 from fluentogram import TranslatorHub
 from loguru import logger
 from redis.asyncio import Redis
+from sqlalchemy import and_
 
 from src.core.config import AppConfig
 from src.core.constants import (
@@ -59,12 +60,18 @@ class UserService(BaseService):
 
         await self.add_to_recent_registered(user.telegram_id)
         await self.clear_user_cache(user.telegram_id)
-
+        logger.info(f"Created new user '{user.telegram_id}'")
         return UserDto.from_model(db_created_user)  # type: ignore[return-value]
 
     @redis_cache(prefix="get_user", ttl=TIME_1M)
     async def get(self, telegram_id: int) -> Optional[UserDto]:
         db_user = await self.uow.repository.users.get(telegram_id)
+
+        if db_user:
+            logger.debug(f"Retrieved user '{telegram_id}'")
+        else:
+            logger.warning(f"User '{telegram_id}' not found")
+
         return UserDto.from_model(db_user)
 
     async def update(self, user: UserDto) -> Optional[UserDto]:
@@ -76,6 +83,7 @@ class UserService(BaseService):
         if db_updated_user:
             await self.clear_user_cache(db_updated_user.telegram_id)
 
+        logger.info(f"Updated user '{user.telegram_id}'")
         return UserDto.from_model(db_updated_user)
 
     async def compare_and_update(
@@ -123,24 +131,36 @@ class UserService(BaseService):
             await self._remove_from_recent_registered(user.telegram_id)
             await self._remove_from_recent_activity(user.telegram_id)
 
+        logger.info(f"Deleted user '{user.telegram_id}': '{result}'")
         return result
 
     async def get_by_partial_name(self, query: str) -> list[UserDto]:
         db_users = await self.uow.repository.users.get_by_partial_name(query)
+        logger.debug(f"Retrieved {len(db_users)} users for query '{query}'")
         return UserDto.from_model_list(db_users)
 
-    @redis_cache(prefix="count", ttl=TIME_1M)
+    @redis_cache(prefix="users_count", ttl=TIME_1M)
     async def count(self) -> int:
-        return await self.uow.repository.users.count()
+        count = await self.uow.repository.users.count()
+        logger.debug(f"Total users count: '{count}'")
+        return count
 
     @redis_cache(prefix="get_by_role", ttl=TIME_1M)
     async def get_by_role(self, role: UserRole) -> list[UserDto]:
         db_users = await self.uow.repository.users.filter_by_role(role)
+        logger.debug(f"Retrieved {len(db_users)} users with role '{role}'")
         return UserDto.from_model_list(db_users)
 
     @redis_cache(prefix="get_blocked_users", ttl=TIME_10M)
     async def get_blocked_users(self) -> list[UserDto]:
         db_users = await self.uow.repository.users.filter_by_blocked(blocked=True)
+        logger.debug(f"Retrieved {len(db_users)} blocked users")
+        return UserDto.from_model_list(db_users)
+
+    @redis_cache(prefix="get_all", ttl=TIME_1M)
+    async def get_all(self) -> list[UserDto]:
+        db_users = await self.uow.repository.users._get_many(User)
+        logger.debug(f"Retrieved {len(db_users)} users")
         return UserDto.from_model_list(db_users)
 
     async def set_block(self, user: UserDto, blocked: bool) -> None:
@@ -150,6 +170,7 @@ class UserService(BaseService):
             **user.changed_data,
         )
         await self.clear_user_cache(user.telegram_id)
+        logger.info(f"Set block={blocked} for user '{user.telegram_id}'")
 
     async def set_bot_blocked(self, user: UserDto, blocked: bool) -> None:
         user.is_bot_blocked = blocked
@@ -158,6 +179,7 @@ class UserService(BaseService):
             **user.changed_data,
         )
         await self.clear_user_cache(user.telegram_id)
+        logger.info(f"Set bot_blocked={blocked} for user '{user.telegram_id}'")
 
     async def set_role(self, user: UserDto, role: UserRole) -> None:
         user.role = role
@@ -166,14 +188,17 @@ class UserService(BaseService):
             **user.changed_data,
         )
         await self.clear_user_cache(user.telegram_id)
+        logger.info(f"Set role='{role.name}' for user '{user.telegram_id}'")
 
     #
 
     async def add_to_recent_registered(self, telegram_id: int) -> None:
         await self._add_to_recent_list(RecentRegisteredUsersKey(), telegram_id)
+        logger.info(f"User '{telegram_id}' added to recent registered list")
 
     async def update_recent_activity(self, telegram_id: int) -> None:
         await self._add_to_recent_list(RecentActivityUsersKey(), telegram_id)
+        logger.info(f"User '{telegram_id}' recent activity updated")
 
     async def get_recent_registered_users(self) -> list[UserDto]:
         telegram_ids = await self._get_recent_registered()
@@ -210,15 +235,22 @@ class UserService(BaseService):
 
     async def search_users(self, message: Message) -> list[UserDto]:
         found_users = []
+
         if message.forward_from and not message.forward_from.is_bot:
             target_telegram_id = message.forward_from.id
             single_user = await self.get(telegram_id=target_telegram_id)
 
             if single_user:
                 found_users.append(single_user)
+                logger.info(f"Searched by forwarded message, found user '{target_telegram_id}'")
+            else:
+                logger.warning(
+                    f"Searched by forwarded message, user '{target_telegram_id}' not found"
+                )
 
         elif message.text:
             search_query = message.text.strip()
+            logger.debug(f"Searching users by query '{search_query}'")
 
             if search_query.isdigit():
                 target_telegram_id = int(search_query)
@@ -226,16 +258,30 @@ class UserService(BaseService):
 
                 if single_user:
                     found_users.append(single_user)
+                    logger.info(f"Searched by Telegram ID '{target_telegram_id}', user found")
+                else:
+                    logger.warning(
+                        f"Searched by Telegram ID '{target_telegram_id}', user not found"
+                    )
+
             elif search_query.startswith(REMNASHOP_PREFIX):
                 try:
                     target_id = int(search_query.split("_", maxsplit=1)[1])
                     single_user = await self.get(telegram_id=target_id)
                     if single_user:
                         found_users.append(single_user)
+                        logger.info(f"Searched by Remnashop ID '{target_id}', user found")
+                    else:
+                        logger.warning(f"Searched by Remnashop ID '{target_id}', user not found")
                 except (IndexError, ValueError):
-                    pass
+                    logger.warning(f"Failed to parse Remnashop ID from query '{search_query}'")
+
             else:
                 found_users = await self.get_by_partial_name(query=search_query)
+                logger.info(
+                    f"Searched users by partial name '{search_query}', "
+                    f"found {len(found_users)} users"
+                )
 
         return found_users
 
@@ -245,6 +291,15 @@ class UserService(BaseService):
             current_subscription_id=subscription_id,
         )
         await self.clear_user_cache(telegram_id)
+        logger.info(f"Set current_subscription='{subscription_id}' for user '{telegram_id}'")
+
+    async def delete_current_subscription(self, telegram_id: int) -> None:
+        await self.uow.repository.users.update(
+            telegram_id=telegram_id,
+            current_subscription_id=None,
+        )
+        await self.clear_user_cache(telegram_id)
+        logger.info(f"Delete current subscription for user '{telegram_id}'")
 
     #
 
@@ -295,7 +350,9 @@ class UserService(BaseService):
             start=0,
             end=RECENT_REGISTERED_MAX_COUNT - 1,
         )
-        return [int(uid) for uid in telegram_ids_str]
+        ids = [int(uid) for uid in telegram_ids_str]
+        logger.debug(f"Retrieved {len(ids)} recent registered user IDs from cache")
+        return ids
 
     async def _remove_from_recent_activity(self, telegram_id: int) -> None:
         await self.redis_repository.list_remove(
@@ -311,4 +368,6 @@ class UserService(BaseService):
             start=0,
             end=RECENT_ACTIVITY_MAX_COUNT - 1,
         )
-        return [int(uid) for uid in telegram_ids_str]
+        ids = [int(uid) for uid in telegram_ids_str]
+        logger.debug(f"Retrieved {len(ids)} recent activity user IDs from cache")
+        return ids

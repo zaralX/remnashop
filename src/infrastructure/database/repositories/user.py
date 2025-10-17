@@ -30,7 +30,7 @@ class UserRepository(BaseRepository):
         return bool(await self._delete(User, User.telegram_id == telegram_id))
 
     async def count(self) -> int:
-        return await self._count(User, User.id)
+        return await self._count(User)
 
     async def filter_by_role(self, role: UserRole) -> list[User]:
         return await self._get_many(User, User.role == role)

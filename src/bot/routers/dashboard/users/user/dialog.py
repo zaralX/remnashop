@@ -7,7 +7,7 @@ from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName, UserRole
 
 from .getters import role_getter, user_getter
-from .handlers import on_block_toggle, on_role_selected
+from .handlers import on_block_toggle, on_role_select
 
 # TODO: Implement a button that adds the user to the access plan's allowed users list
 user = Window(
@@ -70,7 +70,7 @@ role = Window(
             item_id_getter=lambda item: item.value,
             items="roles",
             type_factory=UserRole,
-            on_click=on_role_selected,
+            on_click=on_role_select,
         ),
     ),
     Row(

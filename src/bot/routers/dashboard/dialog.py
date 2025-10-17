@@ -1,9 +1,9 @@
 from aiogram_dialog import Dialog, StartMode, Window
-from aiogram_dialog.widgets.kbd import Button, Column, Row, Select, Start, SwitchTo
-from magic_filter import F
+from aiogram_dialog.widgets.kbd import Button, Row, Start, SwitchTo
 
 from src.bot.states import (
     Dashboard,
+    DashboardAccess,
     DashboardBroadcast,
     DashboardPromocodes,
     DashboardRemnashop,
@@ -11,10 +11,9 @@ from src.bot.states import (
     MainMenu,
 )
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
-from src.core.enums import AccessMode, BannerName
+from src.core.enums import BannerName
 
-from .getters import access_getter, dashboard_getter
-from .handlers import on_access_mode_selected
+from .getters import dashboard_getter
 from .remnawave.handlers import start_remnawave_window
 
 dashboard = Window(
@@ -48,10 +47,11 @@ dashboard = Window(
         ),
     ),
     Row(
-        SwitchTo(
+        Start(
             text=I18nFormat("btn-dashboard-access"),
             id="access",
-            state=Dashboard.ACCESS,
+            state=DashboardAccess.MAIN,
+            mode=StartMode.RESET_STACK,
         ),
     ),
     Row(
@@ -95,33 +95,7 @@ statistics = Window(
     state=Dashboard.STATISTICS,
 )
 
-access = Window(
-    Banner(BannerName.DASHBOARD),
-    I18nFormat("msg-access-main"),
-    Column(
-        Select(
-            text=I18nFormat("btn-access-mode", access_mode=F["item"]),
-            id="mode",
-            item_id_getter=lambda item: item.value,
-            items="modes",
-            type_factory=AccessMode,
-            on_click=on_access_mode_selected,
-        ),
-    ),
-    Row(
-        SwitchTo(
-            text=I18nFormat("btn-back"),
-            id="back",
-            state=Dashboard.MAIN,
-        ),
-    ),
-    IgnoreUpdate(),
-    state=Dashboard.ACCESS,
-    getter=access_getter,
-)
-
 router = Dialog(
     dashboard,
     statistics,
-    access,
 )

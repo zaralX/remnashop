@@ -17,13 +17,29 @@ class Plan(BaseSql, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
-    type: Mapped[PlanType] = mapped_column(Enum(PlanType), nullable=False)
+    type: Mapped[PlanType] = mapped_column(
+        Enum(
+            PlanType,
+            name="plan_type",
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     traffic_limit: Mapped[int] = mapped_column(Integer, nullable=False)
     device_limit: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    availability: Mapped[PlanAvailability] = mapped_column(Enum(PlanAvailability), nullable=False)
+    availability: Mapped[PlanAvailability] = mapped_column(
+        Enum(
+            PlanAvailability,
+            name="plan_availability",
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
     allowed_user_ids: Mapped[list[int]] = mapped_column(ARRAY(BigInteger), nullable=True)
     squad_ids: Mapped[list[UUID]] = mapped_column(ARRAY(PG_UUID), nullable=False)
 
@@ -58,7 +74,15 @@ class PlanPrice(BaseSql):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    currency: Mapped[Currency] = mapped_column(Enum(Currency), nullable=False)
+    currency: Mapped[Currency] = mapped_column(
+        Enum(
+            Currency,
+            name="currency",
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
     plan_duration_id: Mapped[int] = mapped_column(

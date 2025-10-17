@@ -3,6 +3,7 @@ from uuid import UUID
 
 from aiogram import Bot
 from fluentogram import TranslatorHub
+from loguru import logger
 from redis.asyncio import Redis
 
 from src.core.config import AppConfig
@@ -38,25 +39,38 @@ class TransactionService(BaseService):
 
         db_transaction = Transaction(**data, user_telegram_id=user.telegram_id)
         db_created_transaction = await self.uow.repository.transactions.create(db_transaction)
+        logger.info(f"Created transaction '{transaction.payment_id}' for user '{user.telegram_id}'")
         return TransactionDto.from_model(db_created_transaction)  # type: ignore[return-value]
 
     async def get(self, payment_id: UUID) -> Optional[TransactionDto]:
         db_transaction = await self.uow.repository.transactions.get(payment_id)
+
+        if db_transaction:
+            logger.debug(f"Retrieved transaction '{payment_id}'")
+        else:
+            logger.warning(f"Transaction '{payment_id}' not found")
+
         return TransactionDto.from_model(db_transaction)
 
     async def get_by_user(self, telegram_id: int) -> list[TransactionDto]:
-        db_transaction = await self.uow.repository.transactions.get_by_user(telegram_id)
-        return TransactionDto.from_model_list(db_transaction)
+        db_transactions = await self.uow.repository.transactions.get_by_user(telegram_id)
+        logger.debug(f"Retrieved {len(db_transactions)} transactions for user '{telegram_id}'")
+        return TransactionDto.from_model_list(db_transactions)
 
     async def update(self, transaction: TransactionDto) -> Optional[TransactionDto]:
         db_updated_transaction = await self.uow.repository.transactions.update(
             payment_id=transaction.payment_id,
             **transaction.changed_data,
         )
+        logger.info(f"Updated transaction '{transaction.payment_id}'")
         return TransactionDto.from_model(db_updated_transaction)
 
     async def count(self) -> int:
-        return await self.uow.repository.transactions.count()
+        count = await self.uow.repository.transactions.count()
+        logger.debug(f"Total transactions count: '{count}'")
+        return count
 
     async def count_by_status(self, status: TransactionStatus) -> int:
-        return await self.uow.repository.transactions.count_by_status(status)
+        count = await self.uow.repository.transactions.count_by_status(status)
+        logger.debug(f"Transactions count with status '{status}': '{count}'")
+        return count

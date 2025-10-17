@@ -1,6 +1,7 @@
 from collections.abc import AsyncGenerator
 
 from dishka import Provider, Scope, provide
+from loguru import logger
 from redis.asyncio import ConnectionPool, Redis
 
 from src.core.config import AppConfig
@@ -12,13 +13,20 @@ class RedisProvider(Provider):
 
     @provide
     async def get_redis_client(self, config: AppConfig) -> AsyncGenerator[Redis, None]:
+        logger.info("[REDIS] Connecting to Redis")
         connection_pool = ConnectionPool.from_url(url=config.redis.dsn)
         client = Redis(connection_pool=connection_pool)
 
-        await client.ping()
+        try:
+            await client.ping()
+            logger.info("[REDIS] Successfully connected to Redis")
+        except Exception as exception:
+            logger.error(f"[REDIS] Failed to connect to Redis: {exception}")
+            raise
 
         yield client
 
+        logger.debug("[REDIS] Closing Redis client and disconnecting pool")
         await client.close()
         await connection_pool.disconnect()
 

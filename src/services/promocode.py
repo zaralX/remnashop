@@ -2,6 +2,7 @@ from typing import Optional
 
 from aiogram import Bot
 from fluentogram import TranslatorHub
+from loguru import logger
 from redis.asyncio import Redis
 
 from src.core.config import AppConfig
@@ -30,34 +31,55 @@ class PromocodeService(BaseService):
         self.uow = uow
 
     async def create(self, promocode: PromocodeDto) -> PromocodeDto:  # type: ignore
+        # logger.info(f"Created promocode '{promocode.code}'")
         pass
 
     async def get(self, promocode_id: int) -> Optional[PromocodeDto]:
         db_promocode = await self.uow.repository.promocodes.get(promocode_id)
+
+        if db_promocode:
+            logger.debug(f"Retrieved promocode '{promocode_id}'")
+        else:
+            logger.warning(f"Promocode '{promocode_id}' not found")
+
         return PromocodeDto.from_model(db_promocode)
 
     async def get_by_code(self, promocode_code: str) -> Optional[PromocodeDto]:
         db_promocode = await self.uow.repository.promocodes.get_by_code(promocode_code)
+
+        if db_promocode:
+            logger.debug(f"Retrieved promocode by code '{promocode_code}'")
+        else:
+            logger.warning(f"Promocode with code '{promocode_code}' not found")
+
         return PromocodeDto.from_model(db_promocode)
 
     async def get_all(self) -> list[PromocodeDto]:
-        db_promocode = await self.uow.repository.promocodes.get_all()
-        return PromocodeDto.from_model_list(db_promocode)
+        db_promocodes = await self.uow.repository.promocodes.get_all()
+        logger.debug(f"Retrieved '{len(db_promocodes)}' promocodes")
+        return PromocodeDto.from_model_list(db_promocodes)
 
     async def update(self, promocode: PromocodeDto) -> Optional[PromocodeDto]:
         db_updated_promocode = await self.uow.repository.promocodes.update(
             promocode_id=promocode.id,  # type: ignore[arg-type]
             **promocode.changed_data,
         )
+        logger.info(f"Updated promocode '{promocode.code}'")
         return PromocodeDto.from_model(db_updated_promocode)
 
     async def delete(self, promocode_id: int) -> bool:
-        return await self.uow.repository.promocodes.delete(promocode_id)
+        result = await self.uow.repository.promocodes.delete(promocode_id)
+        logger.info(f"Deleted promocode '{promocode_id}': '{result}'")
+        return result
 
     async def filter_by_type(self, promocode_type: PromocodeRewardType) -> list[PromocodeDto]:
         db_promocodes = await self.uow.repository.promocodes.filter_by_type(promocode_type)
+        logger.debug(
+            f"Filtered promocodes by type '{promocode_type}', found '{len(db_promocodes)}'"
+        )
         return PromocodeDto.from_model_list(db_promocodes)
 
     async def filter_active(self, is_active: bool = True) -> list[PromocodeDto]:
         db_promocodes = await self.uow.repository.promocodes.filter_active(is_active)
+        logger.debug(f"Filtered active promocodes: '{is_active}', found '{len(db_promocodes)}'")
         return PromocodeDto.from_model_list(db_promocodes)

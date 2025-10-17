@@ -17,10 +17,10 @@ from .getters import (
     succees_payment_getter,
 )
 from .handlers import (
-    on_duration_selected,
+    on_duration_select,
     on_get_subscription,
-    on_payment_method_selected,
-    on_plan_selected,
+    on_payment_method_select,
+    on_plan_select,
     on_subscription_plans,
 )
 
@@ -77,7 +77,7 @@ plans = Window(
             item_id_getter=lambda item: item["id"],
             items="plans",
             type_factory=int,
-            on_click=on_plan_selected,
+            on_click=on_plan_select,
         ),
     ),
     Row(
@@ -114,7 +114,7 @@ duration = Window(
             item_id_getter=lambda item: item["days"],
             items="durations",
             type_factory=int,
-            on_click=on_duration_selected,
+            on_click=on_duration_select,
         ),
         width=2,
     ),
@@ -159,7 +159,7 @@ payment_method = Window(
             item_id_getter=lambda item: item["gateway_type"],
             items="payment_methods",
             type_factory=PaymentGatewayType,
-            on_click=on_payment_method_selected,
+            on_click=on_payment_method_select,
         ),
     ),
     Row(

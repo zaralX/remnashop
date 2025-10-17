@@ -2,6 +2,7 @@ from .base import BaseSql
 from .payment_gateway import PaymentGateway
 from .plan import Plan, PlanDuration, PlanPrice
 from .promocode import Promocode, PromocodeActivation
+from .settings import Settings
 from .subscription import Subscription
 from .transaction import Transaction
 from .user import User
@@ -14,6 +15,7 @@ __all__ = [
     "PlanPrice",
     "Promocode",
     "PromocodeActivation",
+    "Settings",
     "Subscription",
     "Transaction",
     "User",

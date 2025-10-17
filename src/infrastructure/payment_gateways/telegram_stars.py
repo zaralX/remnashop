@@ -11,14 +11,14 @@ from .base import BasePaymentGateway
 
 
 class TelegramStarsGateway(BasePaymentGateway):
-    async def handle_create_payment(self, payment_id: str, amount: Decimal, details: str) -> str:
+    async def handle_create_payment(self, payment_id: UUID, amount: Decimal, details: str) -> str:
         prices = [LabeledPrice(label=self.gateway.currency, amount=int(amount))]
 
         try:
             pay_url = await self.bot.create_invoice_link(
                 title=details[:32],
                 description=details[:255],
-                payload=payment_id,
+                payload=str(payment_id),
                 currency=self.gateway.currency,
                 prices=prices,
             )

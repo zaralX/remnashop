@@ -2,10 +2,12 @@ from typing import Optional
 
 from aiogram import Bot
 from fluentogram import TranslatorHub
+from loguru import logger
 from redis.asyncio import Redis
 
 from src.core.config import AppConfig
 from src.core.enums import PlanAvailability
+from src.core.utils.formatters import format_user_log as log
 from src.infrastructure.database import UnitOfWork
 from src.infrastructure.database.models.dto import PlanDto, UserDto
 from src.infrastructure.database.models.sql import Plan, PlanDuration, PlanPrice
@@ -35,51 +37,67 @@ class PlanService(BaseService):
     async def create(self, plan: PlanDto) -> PlanDto:
         db_plan = self._dto_to_model(plan)
         db_created_plan = await self.uow.repository.plans.create(db_plan)
+        logger.info(f"Created plan '{plan.name}'")
         return PlanDto.from_model(db_created_plan)  # type: ignore[return-value]
 
     async def get(self, plan_id: int) -> Optional[PlanDto]:
         db_plan = await self.uow.repository.plans.get(plan_id)
+
+        if db_plan:
+            logger.debug(f"Retrieved plan '{plan_id}'")
+        else:
+            logger.warning(f"Plan '{plan_id}' not found")
+
         return PlanDto.from_model(db_plan)
 
     async def get_by_name(self, plan_name: str) -> Optional[PlanDto]:
         db_plan = await self.uow.repository.plans.get_by_name(plan_name)
+
+        if db_plan:
+            logger.debug(f"Retrieved plan by name '{plan_name}'")
+        else:
+            logger.warning(f"Plan with name '{plan_name}' not found")
+
         return PlanDto.from_model(db_plan)
 
     async def get_all(self) -> list[PlanDto]:
         db_plans = await self.uow.repository.plans.get_all()
+        logger.debug(f"Retrieved '{len(db_plans)}' plans")
         return PlanDto.from_model_list(db_plans)
 
     async def update(self, plan: PlanDto) -> Optional[PlanDto]:
         db_plan = self._dto_to_model(plan)
         db_updated_plan = await self.uow.repository.plans.update(db_plan)
+        logger.info(f"Updated plan '{plan.name}'")
         return PlanDto.from_model(db_updated_plan)
 
     async def delete(self, plan_id: int) -> bool:
-        return await self.uow.repository.plans.delete(plan_id)
+        result = await self.uow.repository.plans.delete(plan_id)
+        logger.info(f"Deleted plan '{plan_id}': '{result}'")
+        return result
 
     #
 
     async def get_available_plans(self, user_dto: UserDto) -> list[PlanDto]:
+        logger.debug(f"{log(user_dto)} Fetching available plans")
+
         db_plans: list[Plan] = await self.uow.repository.plans.filter_active(is_active=True)
-
-        # is_new_user = user_dto.subscription_status is None
-        # is_existing_user = user_dto.subscription_status is not None
-        # is_invited_user = user_dto.is_invited
-
         db_filtered_plans = []
+
         for db_plan in db_plans:
             match db_plan.availability:
                 case PlanAvailability.ALL:
                     db_filtered_plans.append(db_plan)
-                # case PlanAvailability.NEW if is_new_user:
-                #     db_filtered_plans.append(db_plan)
-                # case PlanAvailability.EXISTING if is_existing_user:
-                #     db_filtered_plans.append(db_plan)
+                case PlanAvailability.NEW if user_dto.is_new:
+                    db_filtered_plans.append(db_plan)
+                case PlanAvailability.EXISTING if user_dto.is_existing:
+                    db_filtered_plans.append(db_plan)
                 # case PlanAvailability.INVITED if is_invited_user:
                 #     db_filtered_plans.append(db_plan)
                 case PlanAvailability.ALLOWED if user_dto.telegram_id in db_plan.allowed_user_ids:
                     db_filtered_plans.append(db_plan)
 
+        logger.info(f"{log(user_dto)} Available plans filtered: '{len(db_filtered_plans)}'")
         return PlanDto.from_model_list(db_filtered_plans)
 
     #

@@ -1,7 +1,7 @@
 # Menu
 msg-subscription =
     <blockquote>
-    • <b>Лимит трафика</b>: { $traffic_limit } { unit-gigabyte }
+    • <b>Лимит трафика</b>: { $traffic_limit }
     • <b>Лимит устройств</b>: { $device_limit }
     • <b>Заканчивается через</b>: { $expiry_time }
     </blockquote>
@@ -39,11 +39,48 @@ msg-statistics-main = <b>📊 Статистика</b>
 msg-users-main = <b>👥 Пользователи</b>
 msg-broadcast-main = <b>📢 Рассылка</b>
 msg-promocodes-main = <b>🎟 Промокоды</b>
+
+
+# Access
 msg-access-main =
-    <b>🚧 Режим доступа</b>
+    <b>🔓 Режим доступа</b>
     
     <b>Статус</b>: { access-mode }
-    
+
+msg-access-conditions =
+    <b>⚙️ Условия доступа</b>
+
+msg-access-rules =
+    <b>✳️ Изменить ссылку на правила</b>
+
+    Введите ссылку
+
+msg-access-channel =
+    <b>❇️ Изменить ссылку на канал/группу</b>
+
+    Введите ссылку (в формате @channelusername)
+
+
+# Broadcast
+msg-broadcast-list = <b>📄 Список рассылок</b>
+msg-broadcast-select-plan = <b>📦 Выберите план для рассылки</b>
+msg-broadcast-send = <b>📢 Отправить рассылку ({ audience-type })</b>
+
+    { $audience_count } { $audience_count ->
+    [one] пользователю
+    [few] пользователям
+    *[more] пользователей
+    } будет отправлена рассылка
+
+msg-broadcast-content =
+    <b>✉️ Контент рассылки</b>
+
+    Отправьте любое сообщение: текст, изображение или всё вместе (поддерживается HTML)
+
+msg-broadcast-buttons = <b>✳️ Кнопки рассылки</b>
+
+msg-broadcast-view = <b>📢 Рассылка #{ $id }</b>
+
 
 # Users
 msg-users-search =
@@ -245,7 +282,7 @@ msg-plan-config =
     <blockquote>
     • <b>Лимит трафика</b>: { $is_unlimited_traffic -> 
         [1] { unlimited }
-        *[0] { $traffic_limit } { unit-gigabyte }
+        *[0] { $traffic_limit }
         }
     • <b>Лимит устройств</b>: { $is_unlimited_devices -> 
         [1] { unlimited }
@@ -343,7 +380,7 @@ msg-subscription-price-details =
 msg-subscription-details =
     <b>{ $plan }</b>
     <blockquote>
-    • Лимит трафика: <b>{ $traffic } { unit-gigabyte }</b>
+    • Лимит трафика: <b>{ $traffic }</b>
     • Лимит устройств: <b>{ $devices }</b>
     { msg-subscription-duration-details }
     { msg-subscription-price-details }

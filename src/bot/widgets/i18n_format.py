@@ -56,4 +56,4 @@ class I18nFormat(Text):
             data = await self._transform(data, dialog_manager)
 
         data = get_translated_kwargs(i18n, data)
-        return i18n_format_collapse_tags(text=i18n.get(self.key, **data))
+        return i18n_format_collapse_tags(text=i18n.get(self.key.format_map(data), **data))

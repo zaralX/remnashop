@@ -47,13 +47,13 @@ class YookassaGateway(BasePaymentGateway):
             base_url=self.API_BASE,
             auth=(
                 self.gateway.settings.shop_id,
-                self.gateway.settings.key.get_secret_value(),  # type: ignore [arg-type,union-attr]
+                self.gateway.settings.api_key.get_secret_value(),  # type: ignore [arg-type, union-attr]
             ),
             headers={"Content-Type": "application/json"},
         )
 
-    async def handle_create_payment(self, payment_id: str, amount: Decimal, details: str) -> str:
-        headers = {"Idempotence-Key": payment_id}
+    async def handle_create_payment(self, payment_id: UUID, amount: Decimal, details: str) -> str:
+        headers = {"Idempotence-Key": str(payment_id)}
         payload = await self._create_payment_payload(str(amount), details)
 
         try:

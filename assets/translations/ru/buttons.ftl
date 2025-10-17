@@ -4,6 +4,15 @@ btn-back-menu = ⬅️ Вернуться в меню
 btn-back-dashboard = ⬅️ Вернуться в панель управления
 
 
+# Rules
+btn-rules-accept = ✅ Принять правила
+
+
+# Channel
+btn-channel-join = ❤️ Перейти в канал
+btn-channel-confirm = ✅ Подтвердить
+
+
 # Notification
 btn-close-notification = ❌ Закрыть
 
@@ -23,7 +32,7 @@ btn-dashboard-statistics = 📊 Статистика
 btn-dashboard-users = 👥 Пользователи
 btn-dashboard-broadcast = 📢 Рассылка
 btn-dashboard-promocodes = 🎟 Промокоды
-btn-dashboard-access = 🚧 Режим доступа
+btn-dashboard-access = 🔓 Режим доступа
 btn-dashboard-remnawave = 🌊 RemnaWave
 btn-dashboard-remnashop = 🛍 RemnaShop
 
@@ -55,12 +64,25 @@ btn-user-block =  { $is_blocked ->
 
 
 # Broadcast
+btn-broadcast-list = 📄 Список всех рассылок
 btn-broadcast-all = 👥 Всем
-btn-broadcast-user = 👤 Пользователю
+btn-broadcast-plan = 📦 По плану
 btn-broadcast-subscribed = ✅ С подпиской
 btn-broadcast-unsubscribed = ❌ Без подписки
 btn-broadcast-expired = ⌛ Просроченным
-btn-broadcast-last-message = 🕒 Последняя рассылка
+btn-broadcast-trial = ✳️ С пробником
+btn-broadcast-content = ✉️ Редактировать контент
+btn-broadcast-buttons = ✳️ Редактировать кнопки
+btn-broadcast-preview = 👀 Предпросмотр
+btn-broadcast-confirm = ✅ Запустить рассылку
+
+btn-broadcast-button-select = { $selected ->
+    [1] 🔘
+    *[0] ⚪
+    }
+
+btn-goto-subscription = 💳 Купить подписку
+btn-goto-promocode = 🎟 Активировать промокод
 
 
 # Promocodes
@@ -73,6 +95,14 @@ btn-promocodes-edit = ✏️ Редактировать
 
 # Access
 btn-access-mode = { access-mode }
+btn-access-conditions = ⚙️ Условия доступа
+btn-access-rules = ✳️ Принятие правил
+btn-access-channel = ❇️ Подписка на канал
+
+btn-access-condition-toggle = { $enabled ->
+    [1] 🔘 Включено
+    *[0] ⚪ Выключено
+    }
 
 
 # RemnaShop
@@ -112,8 +142,11 @@ btn-notifications-user-choice = { $enabled ->
     [1] 🔘
     *[0] ⚪
     } { $type ->
-    [TYPE] type
-    *[TYPE] type
+    [EXPIRES_IN_3_DAYS] Подписка истекает (3 дня)
+    [EXPIRES_IN_2_DAYS] Подписка истекает (2 дня)
+    [EXPIRES_IN_1_DAYS] Подписка истекает (1 дня)
+    [EXPIRED] Подписка истекла
+    *[OTHER] { $type }
     }
 
 btn-notifications-system = ⚙️ Системные
@@ -125,7 +158,11 @@ btn-notifications-system-choice = { $enabled ->
     [BOT_LIFETIME] Жизненный цикл бота
     [USER_REGISTERED] Регистрация пользователя
     [SUBSCRIPTION] Оформление подписки
-    *[PROMOCODE_ACTIVATED] Активация промокода
+    [PROMOCODE_ACTIVATED] Активация промокода
+    [NODE_STATUS] Статус узла
+    [USER_FIRST_CONNECTED] Первое подключение
+    [USER_HWID] Устройства пользователя
+    *[OTHER] { $type }
     }
 
 
@@ -158,7 +195,8 @@ btn-plan-type-choice = { $type ->
     [TRAFFIC] 🌐 Трафик
     [DEVICES] 📱 Устройства
     [BOTH] 🔗 Трафик + устройства
-    *[UNLIMITED] ♾️ Безлимит
+    [UNLIMITED] ♾️ Безлимит
+    *[OTHER] { $type }
     }
 
 btn-plan-availability-choice = { $type -> 
@@ -166,7 +204,9 @@ btn-plan-availability-choice = { $type ->
     [NEW] 🌱 Для новых
     [EXISTING] 👥 Для клиентов
     [INVITED] ✉️ Для приглашенных
-    *[ALLOWED] 🔐 Для разрешенных
+    [ALLOWED] 🔐 Для разрешенных
+    [TRIAL] 🎁 Для пробника
+    *[OTHER] { $type }
     }
     
 btn-plan-duration = ⌛ { $value ->

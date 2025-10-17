@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .payment_gateway import PaymentGatewayRepository
 from .plan import PlanRepository
 from .promocode import PromocodeRepository
+from .settings import SettingsRepository
 from .subscription import SubscriptionRepository
 from .transaction import TransactionRepository
 from .user import UserRepository
@@ -17,6 +18,7 @@ class RepositoriesFacade:
     subscriptions: SubscriptionRepository
     transactions: TransactionRepository
     users: UserRepository
+    settings: SettingsRepository
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -27,3 +29,4 @@ class RepositoriesFacade:
         self.subscriptions = SubscriptionRepository(session)
         self.transactions = TransactionRepository(session)
         self.users = UserRepository(session)
+        self.settings = SettingsRepository(session)

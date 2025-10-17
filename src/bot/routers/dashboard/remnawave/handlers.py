@@ -8,6 +8,7 @@ from remnawave import RemnawaveSDK
 
 from src.bot.states import DashboardRemnawave
 from src.core.constants import USER_KEY
+from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
 from src.infrastructure.database.models.dto import UserDto
 from src.services.notification import NotificationService
@@ -24,13 +25,14 @@ async def start_remnawave_window(
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
     try:
-        response = await remnawave.system.get_stats()
+        await remnawave.system.get_stats()
     except Exception as exception:
-        logger.error(f"Remnawave: {exception}")
+        logger.exception(f"Remnawave fetch failed: {exception}")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-error-connect-remnawave"),
         )
         return
 
+    logger.info(f"{log(user)} Opened Remnawave dashboard")
     await dialog_manager.start(state=DashboardRemnawave.MAIN, mode=StartMode.RESET_STACK)

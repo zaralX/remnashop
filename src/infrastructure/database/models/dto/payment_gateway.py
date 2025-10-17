@@ -1,7 +1,7 @@
 from typing import Any, Optional, Union
 from uuid import UUID
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 
 from src.core.enums import Currency, PaymentGatewayType, YookassaVatCode
 
@@ -14,7 +14,7 @@ class PaymentResult(TrackableDto):
 
 
 class PaymentGatewayDto(TrackableDto):
-    id: int
+    id: Optional[int] = Field(default=None, frozen=True)
 
     type: PaymentGatewayType
 
@@ -48,7 +48,7 @@ class GatewaySettingsDto(TrackableDto):
 class YookassaGatewaySettingsDto(GatewaySettingsDto):
     type: PaymentGatewayType = PaymentGatewayType.YOOKASSA
     shop_id: Optional[str] = None
-    key: Optional[SecretStr] = None
+    api_key: Optional[SecretStr] = None
     customer: Optional[str] = None
     vat_code: Optional[YookassaVatCode] = None
 
@@ -56,19 +56,26 @@ class YookassaGatewaySettingsDto(GatewaySettingsDto):
 class YoomoneyGatewaySettingsDto(GatewaySettingsDto):
     type: PaymentGatewayType = PaymentGatewayType.YOOMONEY
     wallet_id: Optional[str] = None
-    key: Optional[SecretStr] = None
+    secret_key: Optional[SecretStr] = None
 
 
 class CryptomusGatewaySettingsDto(GatewaySettingsDto):
     type: PaymentGatewayType = PaymentGatewayType.CRYPTOMUS
     merchant_id: Optional[str] = None
-    key: Optional[SecretStr] = None
+    api_key: Optional[SecretStr] = None
 
 
 class HeleketGatewaySettingsDto(GatewaySettingsDto):
     type: PaymentGatewayType = PaymentGatewayType.HELEKET
     merchant_id: Optional[str] = None
-    key: Optional[SecretStr] = None
+    api_key: Optional[SecretStr] = None
+
+
+class UrlpayGatewaySettingsDto(GatewaySettingsDto):
+    type: PaymentGatewayType = PaymentGatewayType.URLPAY
+    shop_id: Optional[str] = None
+    api_key: Optional[SecretStr] = None
+    secret_key: Optional[SecretStr] = None
 
 
 AnyGatewaySettingsDto = Union[
@@ -77,4 +84,5 @@ AnyGatewaySettingsDto = Union[
     YoomoneyGatewaySettingsDto,
     CryptomusGatewaySettingsDto,
     HeleketGatewaySettingsDto,
+    UrlpayGatewaySettingsDto,
 ]

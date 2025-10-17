@@ -4,6 +4,8 @@ import re
 from re import Match
 from typing import TYPE_CHECKING, Final, Optional, Union
 
+from src.infrastructure.database.models.dto.user import BaseUserDto
+
 if TYPE_CHECKING:
     from src.infrastructure.database.models.dto import UserDto
 
@@ -15,14 +17,14 @@ from src.core.i18n.keys import ByteUnitKey, TimeUnitKey, UtilKey
 from src.core.utils.time import datetime_now
 
 
-def format_log_user(user: UserDto) -> str:
+def format_user_log(user: Union[BaseUserDto, UserDto]) -> str:
     return f"[{user.role.upper()}:{user.telegram_id} ({user.name})]"
 
 
 def format_days_to_datetime(value: int, year: int = 2099) -> datetime:
     dt = datetime_now()
 
-    if value == -1:  # UNLIMITED
+    if value == -1:  # UNLIMITED for panel
         try:
             return dt.replace(year=year)
         except ValueError:
@@ -33,8 +35,11 @@ def format_days_to_datetime(value: int, year: int = 2099) -> datetime:
 
 
 def format_device_count(value: int) -> int:
-    if value == -1:  # UNLIMITED
-        return 0
+    if value == 0:
+        return -1  # UNLIMITED for bot
+
+    if value == -1:
+        return 0  # UNLIMITED for panel
 
     return value
 
@@ -42,13 +47,25 @@ def format_device_count(value: int) -> int:
 def format_gb_to_bytes(value: int, *, binary: bool = True) -> int:
     gb_value = Decimal(value)
 
-    if gb_value == -1:  # UNLIMITED
-        return 0
+    if gb_value == -1:
+        return 0  # UNLIMITED for panel
 
     multiplier = Decimal(1024**3) if binary else Decimal(10**9)
     bytes_value = (gb_value * multiplier).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
     return max(0, int(bytes_value))
+
+
+def format_bytes_to_gb(value: int, *, binary: bool = True) -> int:
+    bytes_value = Decimal(value)
+
+    if bytes_value == 0:
+        return -1  # UNLIMITED for bot
+
+    multiplier = Decimal(1024**3) if binary else Decimal(10**9)
+    gb_value = (bytes_value / multiplier).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+
+    return max(0, int(gb_value))
 
 
 def format_percent(part: int, whole: int) -> str:
@@ -66,30 +83,35 @@ def format_country_code(code: str) -> str:
     return "".join(chr(ord("🇦") + ord(c.upper()) - ord("A")) for c in code)
 
 
-def i18n_format_bytes_to_gb(
+def i18n_format_bytes_to_unit(
     value: Optional[Union[int, float]],
     *,
     round_up: bool = False,
     min_unit: ByteUnitKey = ByteUnitKey.GIGABYTE,
 ) -> tuple[str, dict[str, float]]:
-    if not value or value == 0:  # UNLIMITED
+    if not value or value == 0:
         return UtilKey.UNLIMITED, {}
 
     bytes_value = Decimal(value)
-    units: Final[list[ByteUnitKey]] = list(reversed(list(ByteUnitKey)))
+    units: Final[list[ByteUnitKey]] = list(ByteUnitKey)  # [B, KB, MB, GB]
 
-    for unit in units:
-        if bytes_value >= 1024:
-            bytes_value /= Decimal(1024)
-        else:
-            if units.index(unit) <= units.index(min_unit):
-                rounding = ROUND_UP if round_up else ROUND_HALF_UP
-                size_formatted = bytes_value.quantize(Decimal("0.01"), rounding=rounding)
-                return unit, {"value": float(size_formatted)}
+    for i, unit in enumerate(units):
+        if i + 1 < len(units):
+            next_unit_threshold = Decimal(1024)
+            if bytes_value >= next_unit_threshold:
+                bytes_value /= Decimal(1024)
+            else:
+                break
+
+    if units.index(unit) < units.index(min_unit):
+        unit = min_unit
+        factor = Decimal(1024) ** (units.index(min_unit))
+        bytes_value = Decimal(value) / factor
 
     rounding = ROUND_UP if round_up else ROUND_HALF_UP
     size_formatted = bytes_value.quantize(Decimal("0.01"), rounding=rounding)
-    return min_unit, {"value": float(size_formatted)}
+
+    return unit, {"value": float(size_formatted)}
 
 
 def i18n_format_seconds(
@@ -134,6 +156,13 @@ def i18n_format_days(value: int) -> tuple[str, dict[str, int]]:
 
 def i18n_format_limit(value: int) -> tuple[str, dict[str, int]]:
     return UtilKey.UNIT_UNLIMITED, {"value": value}
+
+
+def i18n_format_traffic_limit(value: int) -> tuple[str, dict[str, int]]:
+    if value == -1:
+        return UtilKey.UNIT_UNLIMITED, {"value": value}
+
+    return ByteUnitKey.GIGABYTE, {"value": value}
 
 
 def i18n_format_expire_time(expiry_time: timedelta) -> list[tuple[str, dict[str, int]]]:

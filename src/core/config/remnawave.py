@@ -13,6 +13,7 @@ class RemnawaveConfig(BaseConfig, env_prefix="REMNAWAVE_"):
     # TODO: Ensure connection to the panel within a single Docker network
     host: SecretStr
     token: SecretStr
+    webhook_secret: SecretStr
 
     @property
     def url(self) -> SecretStr:
@@ -35,5 +36,15 @@ class RemnawaveConfig(BaseConfig, env_prefix="REMNAWAVE_"):
     @field_validator("token")
     @classmethod
     def validate_remnawave_token(cls, field: SecretStr, info: FieldValidationInfo) -> SecretStr:
+        validate_not_change_me(field, info)
+        return field
+
+    @field_validator("webhook_secret")
+    @classmethod
+    def validate_remnawave_webhook_secret(
+        cls,
+        field: SecretStr,
+        info: FieldValidationInfo,
+    ) -> SecretStr:
         validate_not_change_me(field, info)
         return field

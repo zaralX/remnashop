@@ -5,7 +5,11 @@ from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 from remnawave import RemnawaveSDK
 
-from src.core.utils.formatters import i18n_format_expire_time, i18n_format_limit
+from src.core.utils.formatters import (
+    i18n_format_expire_time,
+    i18n_format_limit,
+    i18n_format_traffic_limit,
+)
 from src.infrastructure.database.models.dto import UserDto
 from src.services.plan import PlanService
 
@@ -39,7 +43,7 @@ async def menu_getter(
         "name": user.name,
         "status": user.current_subscription.status,
         "type": user.current_subscription.plan.type,
-        "traffic_limit": i18n_format_limit(user.current_subscription.plan.traffic_limit),
+        "traffic_limit": i18n_format_traffic_limit(user.current_subscription.plan.traffic_limit),
         "device_limit": i18n_format_limit(user.current_subscription.plan.device_limit),
         "expiry_time": expiry_time,
         "is_privileged": user.is_privileged,

@@ -4,7 +4,7 @@ from aiogram.types import ChatMemberUpdated
 from dishka import FromDishka
 from loguru import logger
 
-from src.core.utils.formatters import format_log_user
+from src.core.utils.formatters import format_user_log as log
 from src.infrastructure.database.models.dto import UserDto
 from src.services.user import UserService
 
@@ -18,7 +18,7 @@ async def on_unblocked(
     user: UserDto,
     user_service: FromDishka[UserService],
 ) -> None:
-    logger.info(f"{format_log_user(user)} Bot unblocked")
+    logger.info(f"{log(user)} Bot unblocked")
     await user_service.set_bot_blocked(user=user, blocked=False)
 
 
@@ -28,5 +28,5 @@ async def on_blocked(
     user: UserDto,
     user_service: FromDishka[UserService],
 ) -> None:
-    logger.info(f"{format_log_user(user)} Bot blocked")
+    logger.info(f"{log(user)} Bot blocked")
     await user_service.set_bot_blocked(user=user, blocked=True)

@@ -34,21 +34,21 @@ from .getters import (
 from .handlers import (
     on_active_toggle,
     on_allowed_user_input,
-    on_allowed_user_removed,
-    on_availability_selected,
+    on_allowed_user_remove,
+    on_availability_select,
     on_confirm_plan,
-    on_currency_selected,
+    on_currency_select,
     on_devices_input,
     on_duration_input,
-    on_duration_removed,
-    on_duration_selected,
+    on_duration_remove,
+    on_duration_select,
     on_name_input,
-    on_plan_removed,
-    on_plan_selected,
+    on_plan_remove,
+    on_plan_select,
     on_price_input,
-    on_squad_selected,
+    on_squad_select,
     on_traffic_input,
-    on_type_selected,
+    on_type_select,
 )
 
 plans = Window(
@@ -76,12 +76,12 @@ plans = Window(
                     is_active=F["item"]["is_active"],
                 ),
                 id="select_plan",
-                on_click=on_plan_selected,
+                on_click=on_plan_select,
             ),
             Button(
                 text=Format("❌"),
                 id="remove_plan",
-                on_click=on_plan_removed,
+                on_click=on_plan_remove,
             ),
         ),
         id="plans_list",
@@ -209,7 +209,7 @@ plan_type = Window(
             item_id_getter=lambda item: item.value,
             items="types",
             type_factory=PlanType,
-            on_click=on_type_selected,
+            on_click=on_type_select,
         ),
     ),
     Row(
@@ -234,7 +234,7 @@ plan_availability = Window(
             item_id_getter=lambda item: item.value,
             items="availability",
             type_factory=PlanAvailability,
-            on_click=on_availability_selected,
+            on_click=on_availability_select,
         ),
     ),
     Row(
@@ -288,12 +288,12 @@ plan_durations = Window(
             Button(
                 text=I18nFormat("btn-plan-duration", value=F["item"]["days"]),
                 id="select_duration",
-                on_click=on_duration_selected,  # type: ignore[arg-type]
+                on_click=on_duration_select,  # type: ignore[arg-type]
             ),
             Button(
                 text=Format("❌"),
                 id="remove_duration",
-                on_click=on_duration_removed,  # type: ignore[arg-type]
+                on_click=on_duration_remove,  # type: ignore[arg-type]
             ),
         ),
         id="duration_list",
@@ -348,7 +348,7 @@ plan_prices = Window(
             item_id_getter=lambda item: item["currency"].value,
             items="prices",
             type_factory=Currency,
-            on_click=on_currency_selected,
+            on_click=on_currency_select,
         ),
     ),
     Row(
@@ -391,7 +391,7 @@ plan_allowed_users = Window(
             Button(
                 text=Format("❌"),
                 id="remove_allowed_user",
-                on_click=on_allowed_user_removed,
+                on_click=on_allowed_user_remove,
             ),
         ),
         id="allowed_users_list",
@@ -425,7 +425,7 @@ plan_squads = Window(
             item_id_getter=lambda item: item["uuid"],
             items="squads",
             type_factory=UUID,
-            on_click=on_squad_selected,
+            on_click=on_squad_select,
         ),
     ),
     Row(

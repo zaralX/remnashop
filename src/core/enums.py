@@ -11,6 +11,15 @@ class UpperStrEnum(StrEnum):
         return name
 
 
+class BroadcastAudience(UpperStrEnum):
+    ALL = auto()
+    PLAN = auto()
+    SUBSCRIBED = auto()
+    UNSUBSCRIBED = auto()
+    EXPIRED = auto()
+    TRIAL = auto()
+
+
 class PurchaseType(UpperStrEnum):
     NEW = auto()
     RENEW = auto()
@@ -29,6 +38,7 @@ class SubscriptionStatus(UpperStrEnum):
     DISABLED = auto()
     LIMITED = auto()
     EXPIRED = auto()
+    DELETED = auto()
 
 
 class TrafficLimitStrategy(UpperStrEnum):
@@ -90,10 +100,17 @@ class SystemNotificationType(UpperStrEnum):
     USER_REGISTERED = auto()
     SUBSCRIPTION = auto()
     PROMOCODE_ACTIVATED = auto()
+    #
+    NODE_STATUS = auto()
+    USER_FIRST_CONNECTED = auto()
+    USER_HWID = auto()
 
 
 class UserNotificationType(UpperStrEnum):
-    pass
+    EXPIRES_IN_3_DAYS = auto()
+    EXPIRES_IN_2_DAYS = auto()
+    EXPIRES_IN_1_DAYS = auto()
+    EXPIRED = auto()
 
 
 class UserRoleHierarchy(Enum):
@@ -139,7 +156,6 @@ class PlanType(UpperStrEnum):
     DEVICES = auto()
     BOTH = auto()
     UNLIMITED = auto()
-    # TODO: TRIAL = auto() ???
 
 
 class PlanAvailability(UpperStrEnum):
@@ -148,6 +164,7 @@ class PlanAvailability(UpperStrEnum):
     EXISTING = auto()
     INVITED = auto()
     ALLOWED = auto()
+    TRIAL = auto()
 
 
 class Currency(UpperStrEnum):
@@ -175,14 +192,14 @@ class PaymentGatewayType(UpperStrEnum):
     YOOMONEY = auto()
     CRYPTOMUS = auto()
     HELEKET = auto()
-    # TRIBUTE = auto()
+    URLPAY = auto()
 
 
 class AccessMode(UpperStrEnum):
-    ALL = auto()  # Разрешен для всех
-    INVITED = auto()  # Разрешен для приглашенных
-    PURCHASE = auto()  # Запрещены покупки
-    BLOCKED = auto()  # Запрещены любые действия
+    ALL = auto()  # Allowed for everyone
+    INVITED = auto()  # Allowed for invitees
+    PURCHASE = auto()  # Purchases are prohibited
+    BLOCKED = auto()  # Any actions are prohibited
 
 
 class Command(Enum):
@@ -248,6 +265,41 @@ class MiddlewareEventType(StrEnum):
     CHAT_BOOST = auto()
     REMOVED_CHAT_BOOST = auto()
     ERROR = auto()
+
+
+class RemnaUserEvent(StrEnum):
+    CREATED = "user.created"
+    MODIFIED = "user.modified"
+    DELETED = "user.deleted"
+    REVOKED = "user.revoked"
+    DISABLED = "user.disabled"
+    ENABLED = "user.enabled"
+    LIMITED = "user.limited"
+    EXPIRED = "user.expired"
+    TRAFFIC_RESET = "user.traffic_reset"
+    FIRST_CONNECTED = "user.first_connected"
+    BANDWIDTH_USAGE_THRESHOLD_REACHED = "user.bandwidth_usage_threshold_reached"
+
+    EXPIRES_IN_72_HOURS = "user.expires_in_72_hours"
+    EXPIRES_IN_48_HOURS = "user.expires_in_48_hours"
+    EXPIRES_IN_24_HOURS = "user.expires_in_24_hours"
+    EXPIRED_24_HOURS_AGO = "user.expired_24_hours_ago"
+
+
+class RemnaUserHwidDevicesEvent(StrEnum):
+    ADDED = "user_hwid_devices.added"
+    DELETED = "user_hwid_devices.deleted"
+
+
+class RemnaNodeEvent(StrEnum):
+    CREATED = "node.created"
+    MODIFIED = "node.modified"
+    DISABLED = "node.disabled"
+    ENABLED = "node.enabled"
+    DELETED = "node.deleted"
+    CONNECTION_LOST = "node.connection_lost"
+    CONNECTION_RESTORED = "node.connection_restored"
+    TRAFFIC_NOTIFY = "node.traffic_notify"
 
 
 # https://yookassa.ru/developers/payment-acceptance/receipts/54fz/yoomoney/parameters-values#vat-codes

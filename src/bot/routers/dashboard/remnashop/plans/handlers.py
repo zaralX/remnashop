@@ -14,7 +14,7 @@ from src.bot.states import RemnashopPlans
 from src.core.constants import USER_KEY
 from src.core.enums import Currency, PlanAvailability, PlanType
 from src.core.utils.adapter import DialogDataAdapter
-from src.core.utils.formatters import format_log_user
+from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
 from src.core.utils.time import datetime_now
 from src.infrastructure.database.models.dto import PlanDto, PlanDurationDto, PlanPriceDto, UserDto
@@ -25,18 +25,22 @@ from src.services.user import UserService
 
 
 @inject
-async def on_plan_selected(
+async def on_plan_select(
     callback: CallbackQuery,
     widget: Button,
     sub_manager: SubManager,
     plan_service: FromDishka[PlanService],
 ) -> None:
+    user: UserDto = sub_manager.middleware_data[USER_KEY]
     plan: Optional[PlanDto] = await plan_service.get(plan_id=int(sub_manager.item_id))
 
     if not plan:
+        logger.critical(
+            f"{log(user)} Attempted to select non-existent plan '{sub_manager.item_id}'"
+        )
         return
 
-    logger.debug(f"Selected plan ID: {plan.id}")
+    logger.info(f"{log(user)} Selected plan ID '{plan.id}'")
 
     adapter = DialogDataAdapter(sub_manager.manager)
     adapter.save(plan)
@@ -45,7 +49,7 @@ async def on_plan_selected(
 
 
 @inject
-async def on_plan_removed(
+async def on_plan_remove(
     callback: CallbackQuery,
     widget: Button,
     sub_manager: SubManager,
@@ -70,6 +74,7 @@ async def on_plan_removed(
                 payload=MessagePayload(i18n_key="ntf-plan-deleted-success"),
             )
             sub_manager.dialog_data.pop(key, None)
+            logger.info(f"{log(user)} Deleted plan ID '{plan_id}'")
             return
 
     sub_manager.dialog_data[key] = now.isoformat()
@@ -77,6 +82,7 @@ async def on_plan_removed(
         user=user,
         payload=MessagePayload(i18n_key="ntf-plan-click-for-delete"),
     )
+    logger.debug(f"{log(user)} Clicked delete for plan ID '{plan_id}' (awaiting confirmation)")
 
 
 @inject
@@ -89,11 +95,10 @@ async def on_name_input(
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
-
-    logger.debug(f"{format_log_user(user)} Attempted to set plan name")
+    logger.debug(f"{log(user)} Attempted to set plan name")
 
     if message.text is None:
-        logger.warning(f"{format_log_user(user)} Provided empty plan name input")
+        logger.warning(f"{log(user)} Provided empty plan name input")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-wrong-name"),
@@ -101,10 +106,7 @@ async def on_name_input(
         return
 
     if await plan_service.get_by_name(plan_name=message.text):
-        logger.warning(
-            f"{format_log_user(user)} Tried to set plan name to "
-            f"'{message.text}', which already exists"
-        )
+        logger.warning(f"{log(user)} Tried to set duplicate plan name '{message.text}'")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-wrong-name"),
@@ -115,29 +117,30 @@ async def on_name_input(
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
     plan.name = message.text
     adapter.save(plan)
 
-    logger.info(f"{format_log_user(user)} Successfully set plan name to '{plan.name}'")
+    logger.info(f"{log(user)} Successfully set plan name to '{plan.name}'")
     await dialog_manager.switch_to(state=RemnashopPlans.PLAN)
 
 
-async def on_type_selected(
+async def on_type_select(
     callback: CallbackQuery,
     widget: Select[PlanType],
     dialog_manager: DialogManager,
     selected_type: PlanType,
 ) -> None:
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
+    logger.debug(f"{log(user)} Selected plan type '{selected_type}'")
     adapter = DialogDataAdapter(dialog_manager)
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
-
-    logger.debug(f"{format_log_user(user)} Selected plan type '{selected_type}'")
 
     if selected_type == PlanType.DEVICES and plan.device_limit == -1:
         plan.device_limit = 1
@@ -152,11 +155,11 @@ async def on_type_selected(
     plan.type = selected_type
     adapter.save(plan)
 
-    logger.info(f"{format_log_user(user)} Successfully updated plan type to '{plan.type.name}'")
+    logger.info(f"{log(user)} Successfully updated plan type to '{plan.type.name}'")
     await dialog_manager.switch_to(state=RemnashopPlans.PLAN)
 
 
-async def on_availability_selected(
+async def on_availability_select(
     callback: CallbackQuery,
     widget: Select[PlanAvailability],
     dialog_manager: DialogManager,
@@ -167,16 +170,15 @@ async def on_availability_selected(
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
-    logger.debug(f"{format_log_user(user)} Selected plan availability '{selected_availability}'")
+    logger.debug(f"{log(user)} Selected plan availability '{selected_availability}'")
 
     plan.availability = selected_availability
     adapter.save(plan)
 
-    logger.info(
-        f"{format_log_user(user)} Successfully updated plan availability to '{plan.availability}'"
-    )
+    logger.info(f"{log(user)} Successfully updated plan availability to '{plan.availability}'")
     await dialog_manager.switch_to(state=RemnashopPlans.PLAN)
 
 
@@ -190,15 +192,14 @@ async def on_active_toggle(
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
-    logger.debug(f"{format_log_user(user)} Attempted to toggle plan active status")
+    logger.debug(f"{log(user)} Attempted to toggle plan active status")
 
     plan.is_active = not plan.is_active
     adapter.save(plan)
-    logger.info(
-        f"{format_log_user(user)} Successfully toggled plan active status to '{plan.is_active}'"
-    )
+    logger.info(f"{log(user)} Successfully toggled plan active status to '{plan.is_active}'")
 
 
 @inject
@@ -210,13 +211,10 @@ async def on_traffic_input(
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
-
-    logger.debug(f"{format_log_user(user)} Attempted to set plan traffic limit")
+    logger.debug(f"{log(user)} Attempted to set plan traffic limit")
 
     if message.text is None or not (message.text.isdigit() and int(message.text) > 0):
-        logger.warning(
-            f"{format_log_user(user)} Provided invalid traffic limit input: '{message.text}'"
-        )
+        logger.warning(f"{log(user)} Invalid traffic limit input: '{message.text}'")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-wrong-number"),
@@ -228,14 +226,13 @@ async def on_traffic_input(
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
     plan.traffic_limit = number
     adapter.save(plan)
 
-    logger.info(
-        f"{format_log_user(user)} Successfully set plan traffic limit to '{plan.traffic_limit}'"
-    )
+    logger.info(f"{log(user)} Successfully set plan traffic limit to '{plan.traffic_limit}'")
     await dialog_manager.switch_to(state=RemnashopPlans.PLAN)
 
 
@@ -248,13 +245,10 @@ async def on_devices_input(
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
-
-    logger.debug(f"{format_log_user(user)} Attempted to set plan device limit")
+    logger.debug(f"{log(user)} Attempted to set plan device limit")
 
     if message.text is None or not (message.text.isdigit() and int(message.text) > 0):
-        logger.warning(
-            f"{format_log_user(user)} Provided invalid device limit input: '{message.text}'"
-        )
+        logger.warning(f"{log(user)} Invalid device limit input: '{message.text}'")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-wrong-number"),
@@ -266,52 +260,48 @@ async def on_devices_input(
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
     plan.device_limit = number
     adapter.save(plan)
 
-    logger.info(
-        f"{format_log_user(user)} Successfully set plan device limit to '{plan.device_limit}'"
-    )
+    logger.info(f"{log(user)} Successfully set plan device limit to '{plan.device_limit}'")
     await dialog_manager.switch_to(state=RemnashopPlans.PLAN)
 
 
-async def on_duration_selected(
+async def on_duration_select(
     callback: CallbackQuery,
     widget: Button,
     sub_manager: SubManager,
 ) -> None:
     user: UserDto = sub_manager.middleware_data[USER_KEY]
     sub_manager.dialog_data["duration_selected"] = int(sub_manager.item_id)
-    logger.debug(f"{format_log_user(user)} Selected duration '{sub_manager.item_id}' days")
+    logger.debug(f"{log(user)} Selected duration '{sub_manager.item_id}' days")
     await sub_manager.switch_to(state=RemnashopPlans.PRICES)
 
 
-async def on_duration_removed(
+async def on_duration_remove(
     callback: CallbackQuery,
     widget: Button,
     sub_manager: SubManager,
 ) -> None:
     await sub_manager.load_data()
     user: UserDto = sub_manager.middleware_data[USER_KEY]
-
-    logger.debug(f"{format_log_user(user)} Attempted to remove duration")
+    logger.debug(f"{log(user)} Attempted to remove duration")
 
     adapter = DialogDataAdapter(sub_manager.manager)
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
     duration_to_remove = int(sub_manager.item_id)
     new_durations = [d for d in plan.durations if d.days != duration_to_remove]
     plan.durations = new_durations
     adapter.save(plan)
-    logger.info(
-        f"{format_log_user(user)} Successfully removed duration "
-        f"'{duration_to_remove}' days from plan"
-    )
+    logger.info(f"{log(user)} Successfully removed duration '{duration_to_remove}' days from plan")
 
 
 @inject
@@ -323,13 +313,12 @@ async def on_duration_input(
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
-
-    logger.debug(f"{format_log_user(user)} Attempted to add new plan duration")
+    logger.debug(f"{log(user)} Attempted to add new plan duration")
 
     if message.text is None or not (
         message.text.isdigit() and int(message.text) > 0 or int(message.text) == -1
     ):
-        logger.warning(f"{format_log_user(user)} Provided invalid duration input: '{message.text}'")
+        logger.warning(f"{log(user)} Provided invalid duration input: '{message.text}'")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-wrong-number"),
@@ -341,10 +330,11 @@ async def on_duration_input(
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
     if plan.get_duration(number):
-        logger.warning(f"{format_log_user(user)} Provided already existing duration")
+        logger.warning(f"{log(user)} Provided already existing duration")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-duration-already-exists"),
@@ -365,18 +355,18 @@ async def on_duration_input(
     )
     adapter.save(plan)
 
-    logger.info(f"{format_log_user(user)} New duration '{number}' days added to plan")
+    logger.info(f"{log(user)} New duration '{number}' days added to plan")
     await dialog_manager.switch_to(state=RemnashopPlans.DURATIONS)
 
 
-async def on_currency_selected(
+async def on_currency_select(
     callback: CallbackQuery,
     widget: Select[Currency],
     dialog_manager: DialogManager,
     currency_selected: Currency,
 ) -> None:
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
-    logger.debug(f"{format_log_user(user)} Selected currency '{currency_selected}'")
+    logger.info(f"{log(user)} Selected currency '{currency_selected}'")
     dialog_manager.dialog_data["currency_selected"] = currency_selected.value
     await dialog_manager.switch_to(state=RemnashopPlans.PRICE)
 
@@ -390,11 +380,10 @@ async def on_price_input(
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
-
-    logger.debug(f"{format_log_user(user)} Attempted to set plan price")
+    logger.debug(f"{log(user)} Attempted to set plan price")
 
     if message.text is None:
-        logger.warning(f"{format_log_user(user)} Provided empty price input")
+        logger.warning(f"{log(user)} Provided empty price input")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-wrong-number"),
@@ -405,12 +394,13 @@ async def on_price_input(
     currency_selected = dialog_manager.dialog_data.get("currency_selected")
 
     if not duration_selected or not currency_selected:
+        logger.critical(f"{log(user)} Missing duration or currency selection for price input")
         return
 
     try:
         new_price = PricingService.parse_price(message.text, currency_selected)
     except ValueError:
-        logger.warning(f"{format_log_user(user)} Provided invalid price input: '{message.text}'")
+        logger.warning(f"{log(user)} Provided invalid price input: '{message.text}'")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-wrong-number"),
@@ -421,6 +411,7 @@ async def on_price_input(
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
     for duration in plan.durations:
@@ -428,8 +419,8 @@ async def on_price_input(
             for price in duration.prices:
                 if price.currency == currency_selected:
                     price.price = new_price
-                    logger.debug(
-                        f"{format_log_user(user)} Updated price for duration '{duration.days}' "
+                    logger.info(
+                        f"{log(user)} Updated price for duration '{duration.days}' "
                         f"and currency '{currency_selected}' to '{new_price}'"
                     )
                     break
@@ -449,11 +440,10 @@ async def on_allowed_user_input(
 ) -> None:
     dialog_manager.show_mode = ShowMode.EDIT
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
-
-    logger.debug(f"{format_log_user(user)} Attempted to set allowed id for plan")
+    logger.debug(f"{log(user)} Attempted to set allowed id for plan")
 
     if message.text is None or not message.text.isdigit():
-        logger.warning(f"{format_log_user(user)} Provided non-numeric user ID")
+        logger.warning(f"{log(user)} Provided non-numeric user ID")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-wrong-allowed-id"),
@@ -464,12 +454,13 @@ async def on_allowed_user_input(
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
     allowed_user = await user_service.get(telegram_id=int(message.text))
 
     if not allowed_user:
-        logger.warning(f"{format_log_user(user)} No user found with Telegram ID '{message.text}'")
+        logger.warning(f"{log(user)} No user found with Telegram ID '{message.text}'")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-no-user-found"),
@@ -477,9 +468,7 @@ async def on_allowed_user_input(
         return  # TODO: Allow adding non-existent users to the list?
 
     if allowed_user.telegram_id in plan.allowed_user_ids:
-        logger.warning(
-            f"{format_log_user(user)} User '{allowed_user.telegram_id}' is already allowed for plan"
-        )
+        logger.warning(f"{log(user)} User '{allowed_user.telegram_id}' is already allowed for plan")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-user-already-allowed"),
@@ -491,12 +480,13 @@ async def on_allowed_user_input(
 
 
 @inject
-async def on_allowed_user_removed(
+async def on_allowed_user_remove(
     callback: CallbackQuery,
     widget: Button,
     sub_manager: SubManager,
-    plan_service: FromDishka[PlanService],
 ) -> None:
+    user: UserDto = sub_manager.middleware_data[USER_KEY]
+    logger.debug(f"{log(user)} Attempted to remove allowed user from plan")
     await sub_manager.load_data()
     user_id = int(sub_manager.item_id)
 
@@ -504,14 +494,16 @@ async def on_allowed_user_removed(
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
+    logger.info(f"{log(user)} Removed allowed user ID '{user_id}' from plan")
     plan.allowed_user_ids.remove(user_id)
     adapter.save(plan)
 
 
 @inject
-async def on_squad_selected(
+async def on_squad_select(
     callback: CallbackQuery,
     widget: Select[UUID],
     dialog_manager: DialogManager,
@@ -523,14 +515,15 @@ async def on_squad_selected(
     plan = adapter.load(PlanDto)
 
     if not plan:
+        logger.critical("Failed to load PlanDto")
         return
 
     if selected_squad in plan.squad_ids:
         plan.squad_ids.remove(selected_squad)
-        logger.debug(f"{format_log_user(user)} Unset squad '{selected_squad}'")
+        logger.info(f"{log(user)} Unset squad '{selected_squad}'")
     else:
         plan.squad_ids.append(selected_squad)
-        logger.debug(f"{format_log_user(user)} Set squad '{selected_squad}'")
+        logger.info(f"{log(user)} Set squad '{selected_squad}'")
 
     adapter.save(plan)
 
@@ -545,13 +538,13 @@ async def on_confirm_plan(
 ) -> None:
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
-    logger.debug(f"{format_log_user(user)} Attempted to confirm plan")
+    logger.debug(f"{log(user)} Attempted to confirm plan")
 
     adapter = DialogDataAdapter(dialog_manager)
     plan_dto = adapter.load(PlanDto)
 
     if not plan_dto:
-        logger.error(f"{format_log_user(user)} Failed to load PlanDto for plan confirmation")
+        logger.error(f"{log(user)} Failed to load PlanDto for plan confirmation")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-save-error"),
@@ -572,9 +565,9 @@ async def on_confirm_plan(
         plan_dto.allowed_user_ids = []
 
     if plan_dto.id:
-        logger.info(f"{format_log_user(user)} Updating existing plan with ID '{plan_dto.id}'")
+        logger.info(f"{log(user)} Updating existing plan with ID '{plan_dto.id}'")
         await plan_service.update(plan_dto)
-        logger.info(f"{format_log_user(user)} Plan '{plan_dto.name}' updated successfully")
+        logger.info(f"{log(user)} Plan '{plan_dto.name}' updated successfully")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-updated-success"),
@@ -582,19 +575,16 @@ async def on_confirm_plan(
     else:
         existing_plan: Optional[PlanDto] = await plan_service.get_by_name(plan_name=plan_dto.name)
         if existing_plan:
-            logger.warning(
-                f"{format_log_user(user)} Plan with name '{plan_dto.name}' "
-                f"already exists during creation. Aborting plan creation"
-            )
+            logger.warning(f"{log(user)} Plan with name '{plan_dto.name}' already exists. Aborting")
             await notification_service.notify_user(
                 user=user,
                 payload=MessagePayload(i18n_key="ntf-plan-name-already-exists"),
             )
             return
 
-        logger.info(f"{format_log_user(user)} Creating new plan with name '{plan_dto.name}'")
+        logger.info(f"{log(user)} Creating new plan with name '{plan_dto.name}'")
         plan = await plan_service.create(plan_dto)
-        logger.info(f"{format_log_user(user)} Plan '{plan.name}' created successfully")
+        logger.info(f"{log(user)} Plan '{plan.name}' created successfully")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(i18n_key="ntf-plan-created-success"),

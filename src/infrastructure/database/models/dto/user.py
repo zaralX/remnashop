@@ -70,3 +70,11 @@ class UserDto(BaseUserDto):
     subscriptions: list["BaseSubscriptionDto"] = []
     promocode_activations: list["PromocodeActivationDto"] = []
     transactions: list["BaseTransactionDto"] = []
+
+    @property
+    def is_new(self) -> bool:
+        return len(self.subscriptions) == 0
+
+    @property
+    def is_existing(self) -> bool:
+        return len(self.subscriptions) > 0

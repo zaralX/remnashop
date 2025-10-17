@@ -11,7 +11,7 @@ from src.bot.states import DashboardUser, MainMenu
 from src.core.config import AppConfig
 from src.core.constants import USER_KEY
 from src.core.enums import MessageEffect, UserRole
-from src.core.utils.formatters import format_log_user
+from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
 from src.infrastructure.database.models.dto import UserDto
 from src.infrastructure.taskiq.tasks.redirects import redirect_to_main_menu_task
@@ -29,7 +29,7 @@ async def handle_role_switch_preconditions(
     user_service: FromDishka[UserService],
 ) -> bool:
     if target_user.telegram_id == user.telegram_id:
-        logger.debug(f"{format_log_user(user)} Attempted to switch role to self")
+        logger.info(f"{log(user)} Attempted to switch role to self")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(
@@ -40,11 +40,10 @@ async def handle_role_switch_preconditions(
         return True
 
     if target_user.telegram_id == config.bot.dev_id:
-        logger.critical(f"{format_log_user(user)} Attempted to modify role of SUPER DEV")
-
+        logger.critical(f"{log(user)} Attempted to modify role of SUPER DEV")
         await user_service.set_role(user=user, role=UserRole.USER)
         await user_service.set_block(user=user, blocked=True)
-        logger.warning(f"{format_log_user(user)} Demoted and blocked")
+        logger.warning(f"{log(user)} Demoted and blocked")
 
         await manager.start(state=MainMenu.MAIN, mode=StartMode.RESET_STACK)
         await notification_service.notify_super_dev(
@@ -61,9 +60,8 @@ async def handle_role_switch_preconditions(
         return True
 
     if user.role != UserRole.DEV and user.role <= target_user.role:
-        logger.debug(
-            f"{format_log_user(user)} Attempted to modify role of a user with equal or higher role "
-            f"({format_log_user(target_user)})"
+        logger.warning(
+            f"{log(user)} Attempted to modify role of equal/higher user ({log(target_user)})"
         )
         await notification_service.notify_user(
             user=user,
@@ -102,16 +100,15 @@ async def on_block_toggle(
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
     if not target_user:
-        logger.warning(
-            f"{format_log_user(user)} Attempted to toggle block status "
-            f"for non-existent user with ID '{target_telegram_id}'"
+        logger.critical(
+            f"{log(user)} Attempted to toggle block for non-existent user '{target_telegram_id}'"
         )
         return
 
     blocked = not target_user.is_blocked
 
     if target_user.telegram_id == user.telegram_id:
-        logger.info(f"{format_log_user(user)} Attempted to block to self")
+        logger.debug(f"{log(user)} Attempted to block self")
         await notification_service.notify_user(
             user=user,
             payload=MessagePayload(
@@ -122,11 +119,10 @@ async def on_block_toggle(
         return
 
     if target_user.telegram_id == config.bot.dev_id:
-        logger.critical(f"{format_log_user(user)} Attempted to block of SUPER DEV")
-
+        logger.critical(f"{log(user)} Attempted to block SUPER DEV")
         await user_service.set_role(user=user, role=UserRole.USER)
         await user_service.set_block(user=user, blocked=True)
-        logger.warning(f"{format_log_user(user)} Demoted and blocked")
+        logger.warning(f"{log(user)} Demoted and blocked")
 
         await dialog_manager.start(state=MainMenu.MAIN, mode=StartMode.RESET_STACK)
         await notification_service.notify_super_dev(
@@ -142,8 +138,7 @@ async def on_block_toggle(
 
     if user.role <= target_user.role:
         logger.warning(
-            f"User {user.telegram_id} attempted to block a user with equal or higher role "
-            f"({target_user.telegram_id})"
+            f"{log(user)} Attempted to block equal/higher role user ({log(target_user)})"
         )
         await notification_service.notify_user(
             user=user,
@@ -156,13 +151,12 @@ async def on_block_toggle(
     await user_service.set_block(user=target_user, blocked=blocked)
     await redirect_to_main_menu_task.kiq(target_user)
     logger.info(
-        f"{format_log_user(user)} Successfully {'blocked' if blocked else 'unblocked'} "
-        f"user {format_log_user(target_user)}"
+        f"{log(user)} Successfully {'blocked' if blocked else 'unblocked'} {log(target_user)}"
     )
 
 
 @inject
-async def on_role_selected(
+async def on_role_select(
     callback: CallbackQuery,
     widget: Select[UserRole],
     dialog_manager: DialogManager,
@@ -175,22 +169,20 @@ async def on_role_selected(
     target_user = await user_service.get(telegram_id=target_telegram_id)
 
     if not target_user:
-        logger.warning(
-            f"{format_log_user(user)} Attempted to change role "
-            f"for non-existent user with ID '{target_telegram_id}'"
+        logger.critical(
+            f"{log(user)} Attempted to change role for non-existent user '{target_telegram_id}'"
         )
         return
 
     if await handle_role_switch_preconditions(user, target_user, dialog_manager):
         logger.info(
-            f"{format_log_user(user)} Role change for "
-            f"{format_log_user(target_user)} to '{selected_role}' aborted due to pre-conditions"
+            f"{log(user)} Role change for {log(target_user)} "
+            f"to '{selected_role}' aborted by pre-conditions"
         )
         return
 
     await user_service.set_role(user=target_user, role=selected_role)
     await redirect_to_main_menu_task.kiq(target_user)
     logger.info(
-        f"{format_log_user(user)} Successfully changed role for "
-        f"{format_log_user(target_user)} to '{selected_role}'"
+        f"{log(user)} Successfully changed role for {log(target_user)} to '{selected_role}'"
     )

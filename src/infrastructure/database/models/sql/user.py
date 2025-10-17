@@ -24,8 +24,24 @@ class User(BaseSql, TimestampMixin):
     username: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     name: Mapped[str] = mapped_column(String, nullable=False)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), nullable=False)
-    language: Mapped[Locale] = mapped_column(Enum(Locale), nullable=False)
+    role: Mapped[UserRole] = mapped_column(
+        Enum(
+            UserRole,
+            name="user_role",
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
+    language: Mapped[Locale] = mapped_column(
+        Enum(
+            Locale,
+            name="locale",
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
 
     personal_discount: Mapped[int] = mapped_column(Integer, nullable=False)
     purchase_discount: Mapped[int] = mapped_column(Integer, nullable=False)

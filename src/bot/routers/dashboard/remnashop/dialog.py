@@ -14,7 +14,7 @@ from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName
 
 from .getters import admins_getter
-from .handlers import on_logs_requested, on_user_role_removed, on_user_selected
+from .handlers import on_logs_request, on_user_role_remove, on_user_select
 
 remnashop = Window(
     Banner(BannerName.DASHBOARD),
@@ -64,7 +64,7 @@ remnashop = Window(
         Button(
             text=I18nFormat("btn-remnashop-logs"),
             id="logs",
-            on_click=on_logs_requested,
+            on_click=on_logs_request,
         ),
         Button(
             text=I18nFormat("btn-remnashop-audit"),
@@ -92,12 +92,12 @@ admins = Window(
             Button(
                 text=Format("{item.telegram_id} ({item.name})"),
                 id="select_user",
-                on_click=on_user_selected,
+                on_click=on_user_select,
             ),
             Button(
                 text=Format("❌"),
                 id="remove_role",
-                on_click=on_user_role_removed,
+                on_click=on_user_role_remove,
             ),
         ),
         id="admins_list",

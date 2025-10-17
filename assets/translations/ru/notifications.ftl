@@ -14,10 +14,10 @@ ntf-event-error =
     <blockquote>
     { $user -> 
         [1]
-        • Пользователь: <code>{ $id }</code> ({ $name })
-        • Ошибка: { $error }
+        • <b>Пользователь</b>: <code>{ $id }</code> ({ $name })
+        • <b>Ошибка</b>: { $error }
         *[0] 
-        • Ошибка: { $error }
+        • <b>Ошибка</b>: { $error }
     }
     </blockquote>
     
@@ -27,7 +27,7 @@ ntf-event-error-webhook =
     <b>🔅 Событие: Зафиксирована ошибка вебхука!</b>
 
     <blockquote>
-    • Ошибка: { $error }
+    • <b>Ошибка</b>: { $error }
     </blockquote>
 
 ntf-event-bot-startup =
@@ -36,7 +36,7 @@ ntf-event-bot-startup =
     <b>🔅 Событие: Бот запущен!</b>
 
     <blockquote>
-    • Режим доступа: <b>{ access-mode }</b>
+    • <b>Режим доступа</b>: { access-mode }
     </blockquote>
 
 ntf-event-bot-shutdown =
@@ -50,29 +50,29 @@ ntf-event-new-user =
     <b>🔅 Событие: Новый пользователь!</b>
 
     <blockquote>
-    • ID: <code>{ $id }</code>
-    • Имя: <b>{ $name }</b> { $username -> 
+    • <b>ID</b>: <code>{ $id }</code>
+    • <b>Имя</b>: { $name } { $username -> 
         [0] { space }
         *[has] (<a href="tg://user?id={ $id }">@{ $username }</a>)
     }
     </blockquote>
 
 ntf-event-payment-info-amount =
-    <b>{ $final_amount } { $currency }</b> { $discount_percent -> 
+    { $final_amount } { $currency } { $discount_percent -> 
     [0] { space }
     *[more] <strike>{ $original_amount } { $currency }</strike> ({ $discount_percent }%)
     }
 
 ntf-event-payment-info =
     <blockquote>
-    • ID: <code>{ $payment_id }</code>
-    • Способ оплаты: <b>{ gateway-type }</b>
-    • Сумма: { ntf-event-payment-info-amount }
+    • <b>ID</b>: <code>{ $payment_id }</code>
+    • <b>Способ оплаты</b>: { gateway-type }
+    • <b>Сумма</b>: { ntf-event-payment-info-amount }
     </blockquote>
 
     <blockquote>
-    • ID: <code>{ $user_id }</code>
-    • Имя: <b>{ $user_name }</b> { $user_username -> 
+    • <b>ID</b>: <code>{ $user_id }</code>
+    • <b>Имя</b>: { $user_name } { $user_username -> 
         [0] { space }
         *[has] (<a href="tg://user?id={ $user_id }">@{ $user_username }</a>)
     }
@@ -80,20 +80,20 @@ ntf-event-payment-info =
     
 ntf-event-payment-info-plan =
     <blockquote>
-    • План: <code>{ $plan_name }</code>
-    • Тип: <b>{ plan-type }</b>
-    • Лимит трафика: <b>{ $plan_traffic_limit } { unit-gigabyte }</b>
-    • Лимит устройств: <b>{ $plan_device_limit }</b>
-    • Длительность: <b>{ $plan_duration }</b>
+    • <b>План</b>: <code>{ $plan_name }</code>
+    • <b>Тип</b>: { plan-type }
+    • <b>Лимит трафика</b>: { $plan_traffic_limit }
+    • <b>Лимит устройств</b>: { $plan_device_limit }
+    • <b>Длительность</b>: { $plan_duration }
     </blockquote>
 
 ntf-event-payment-info-previous-plan =
     <blockquote>
-    • План: <code>{ $previous_plan_name }</code> -> <code>{ $plan_name }</code>
-    • Тип: <b>{ $previous_plan_type }</b> -> <b>{ plan-type }</b>
-    • Лимит трафика: <b>{ $previous_plan_traffic_limit } { unit-gigabyte }</b> -> <b>{ $plan_traffic_limit } { unit-gigabyte }</b>
-    • Лимит устройств: <b>{ $previous_plan_device_limit }</b> -> <b>{ $plan_device_limit }</b>
-    • Длительность: <b>{ $previous_plan_duration }</b> -> <b>{ $plan_duration }</b>
+    • <b>План</b>: <code>{ $previous_plan_name }</code> -> <code>{ $plan_name }</code>
+    • <b>Тип</b>: { $previous_plan_type } -> { plan-type }
+    • <b>Лимит трафика</b>: { $previous_plan_traffic_limit } -> { $plan_traffic_limit }
+    • <b>Лимит устройств</b>: { $previous_plan_device_limit } -> { $plan_device_limit }
+    • <b>Длительность</b>: { $previous_plan_duration } -> { $plan_duration }
     </blockquote>
 
 ntf-event-subscription-new =
@@ -123,9 +123,110 @@ ntf-event-subscription-change =
 
     { ntf-event-payment-info-previous-plan }
 
+ntf-event-node-info =
+    <blockquote>
+    • <b>Название</b>: { $country } { $name }
+    • <b>Адрес</b>: <code>{ $address }:{ $port }</code>
+    • <b>Трафик</b>: { $traffic_used } / { $traffic_limit }
+    • <b>Последний статус</b>: { $last_status_message }
+    • <b>Статус изменен</b>: { $last_status_change }
+    </blockquote>
+
+ntf-event-node-connection-lost =
+    #EventNode
+
+    <b>🔅 Событие: Соединение с узлом потеряно!</b>
+
+    { ntf-event-node-info }
+
+ntf-event-node-connection-restored =
+    #EventNode
+
+    <b>🔅 Событие: Cоединение с узлом восстановлено!</b>
+
+    { ntf-event-node-info }
+
+ntf-event-node-traffic =
+    #EventNode
+
+    <b>🔅 Событие: Узел достиг порога лимита трафика!</b>
+
+    { ntf-event-node-info }
+
+ntf-event-user-info =
+    <blockquote>
+    • <b>UUID пользователя</b>: <code>{ $uuid }</code>
+    • <b>ID</b>: <code>{ $telegram_id }</code>
+    • <b>Статус</b>: { $status }
+
+    • <b>Трафик</b>: { $traffic_used } / { $traffic_limit }
+    • <b>Лимит устройств</b>: { $device_limit }
+    • <b>Заканчивается</b>: { $expire_at }
+    </blockquote>
+
+ntf-event-user-sync =
+    #EventUser
+
+    <b>🔅 Событие: Синхронизация пользователя!</b>
+
+    { ntf-event-user-info }
+
+ntf-event-user-deleted =
+    #EventUser
+
+    <b>🔅 Событие: Пользователь удален из панели!</b>
+
+    { ntf-event-user-info }
+
+ntf-event-user-first-connected =
+    #EventUser
+
+    <b>🔅 Событие: Первое подключение пользователя!</b>
+
+    { ntf-event-user-info }
+
+ntf-event-user-expires =
+    <b>⚠️ Внимание! Ваша подписка истекает через { unit-day }.</b>
+
+ntf-event-user-expired =
+    <b>⛔ Внимание! Доступ приостановлен — VPN не работает.</b>
+
+    Ваша подписка истекла, продлите её, чтобы продолжить пользоваться VPN.
+
+
+ntf-event-user-hwid =
+    <blockquote>
+    • <b>UUID пользователя</b>: <code>{ $user_uuid }</code>
+    • <b>HWID</b>: <code>{ $hwid }</code>
+
+    • <b>Платформа</b>: { $platform }
+    • <b>Модель</b>: { $device_model }
+    • <b>Версия ОС</b>: { $os_version }
+    • <b>Агент</b>: { $user_agent }
+    </blockquote>
+
+ntf-event-user-hwid-added =
+    #EventUserHwid
+
+    <b>🔅 Событие: Добавлено устройство пользователя!</b>
+
+    { ntf-event-user-hwid }
+
+ntf-event-user-hwid-deleted =
+    #EventUserHwid
+
+    <b>🔅 Событие: Удалено устройство пользователя!</b>
+
+    { ntf-event-user-hwid }
+
 
 # Notifications
+ntf-channel-join-required = ❇️ Подпишитесь на наш канал и получайте <b>бесплатные дни, акции и новости</b>! После подписки нажмите кнопку «Подтвердить».
+ntf-channel-join-error = <i>⚠️ Мы не видим вашу подписку на канал. Проверьте, что вы подписались, и попробуйте ещё раз.</i>
+ntf-rules-accept-required = ⚠️ <b>Перед использованием сервиса, пожалуйста, ознакомьтесь и примите <a href="{ $url }">Условия использования</a> сервиса.</b>
 ntf-throttling-many-requests = <i>⚠️ Вы отправляете слишком много запросов, пожалуйста, подождите немного</i>
+
+
 ntf-user-block-self = <i>❌ Нельзя заблокировать самого себя</i>
 ntf-user-block-equal = <i>❌ Нельзя заблокировать равноправного пользователя</i>
 ntf-user-switch-role-self = <i>❌ Нельзя сменить роль самому себе</i>
@@ -142,9 +243,12 @@ ntf-user-switch-role-dev =
 
     <i>Он был разжалован и заблокирован</i>
 
+
 ntf-access-denied = <i>🚧 Бот в режиме обслуживания, попробуйте позже</i>
 ntf-access-denied-purchase = <i>🚧 Бот в режиме обслуживания, Вам придет уведомление когда бот снова будет доступен</i>
 ntf-access-allowed = <i>❇️ Весь функционал бота снова доступен, спасибо за ожидание</i>
+ntf-access-wrong-link = <i>❌ Некорректная ссылка</i>
+ntf-access-link-saved = <i>✅ Ссылка успешно обновлена</i>
 
 ntf-plan-wrong-name = <i>❌ Некорректное имя</i>
 ntf-plan-wrong-number = <i>❌ Некорректное число</i>
@@ -159,12 +263,24 @@ ntf-plan-updated-success = <i>✅ План успешно обновлен</i>
 ntf-plan-created-success = <i>✅ План успешно создан</i>
 ntf-plan-deleted-success = <i>✅ План успешно удален</i>
 
+
 ntf-gateway-not-configured = <i>❌ Платежный шлюз не настроен</i>
 ntf-gateway-not-configurable = <i>❌ Платежный шлюз не имеет настроек</i>
 ntf-gateway-field-wrong-value = <i>❌ Некорректное значение</i>
 ntf-gateway-test-payment-success = <i>✅ <a href="{ $url }">Тестовый платеж</a> успешно создан</i>
 ntf-gateway-test-payment-error = <i>❌ Произошла ошибка при создании тестового платежа</i>
+ntf-gateway-test-payment-confirm = <i>✅ Тестовый платеж успешно обработан</i>
+
 
 ntf-subscription-plans-not-available = <i>❌ Нет доступных планов</i>
 ntf-subscription-gateways-not-available = <i>❌ Нет доступных платежных систем</i>
 ntf-subscription-renew-plan-mismatch = <i>❌ Ваш план устарел и не доступен для продления</i>
+
+
+ntf-broadcast-audience-not-available = <i>❌ Нет доступных пользователей для выбранной аудитории</i>
+ntf-broadcast-plans-not-available = <i>❌ Нет доступных планов</i>
+ntf-broadcast-empty-content = <i>❌ Контент пустой.</i>
+ntf-broadcast-wrong-content = <i>❌ Некорректный контент</i>
+ntf-broadcast-content-saved = <i>✅ Контент сообщения успешно сохранен</i>
+ntf-broadcast-preview = { $content }
+ntf-broadcast-click-for-confirm = <i>⚠️ Нажмите еще раз, чтобы подтвердить рассылку</i>

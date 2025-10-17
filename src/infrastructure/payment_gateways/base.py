@@ -38,7 +38,7 @@ class BasePaymentGateway(ABC):
     @abstractmethod
     async def handle_create_payment(
         self,
-        payment_id: str,
+        payment_id: UUID,
         amount: Decimal,
         details: str,
     ) -> str: ...

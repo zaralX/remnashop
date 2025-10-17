@@ -7,6 +7,9 @@ from .base import BaseRepository
 
 
 class PaymentGatewayRepository(BaseRepository):
+    async def create(self, gateway: PaymentGateway) -> PaymentGateway:
+        return await self.create_instance(gateway)
+
     async def get(self, gateway_id: int) -> Optional[PaymentGateway]:
         return await self._get_one(PaymentGateway, PaymentGateway.id == gateway_id)
 

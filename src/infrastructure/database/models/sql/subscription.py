@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import JSON, BigInteger, DateTime, Enum, ForeignKey, Integer, String
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,10 +25,19 @@ class Subscription(BaseSql, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_remna_id: Mapped[UUID] = mapped_column(PG_UUID, nullable=False)
 
-    status: Mapped[SubscriptionStatus] = mapped_column(Enum(SubscriptionStatus), nullable=False)
+    status: Mapped[SubscriptionStatus] = mapped_column(
+        Enum(
+            SubscriptionStatus,
+            name="subscription_status",
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
     expire_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     url: Mapped[str] = mapped_column(String, nullable=False)
     plan: Mapped[PlanSnapshotDto] = mapped_column(JSON, nullable=False)
+    is_trial: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     user_telegram_id: Mapped[int] = mapped_column(
         BigInteger,

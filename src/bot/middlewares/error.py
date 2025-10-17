@@ -33,7 +33,7 @@ class ErrorMiddleware(EventTypedMiddleware):
         error_message = Text(str(error_event.exception)[:512])
 
         await send_error_notification_task.kiq(
-            update_id=error_event.update.update_id,
+            error_id=user_id or error_event.update.update_id,
             traceback_str=traceback_str,
             i18n_kwargs={
                 "user": bool(user_id),

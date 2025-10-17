@@ -1,6 +1,7 @@
 from types import TracebackType
 from typing import Optional, Self, Type
 
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .repositories import RepositoriesFacade
@@ -32,6 +33,7 @@ class UnitOfWork:
         if exc_type is None:
             await self.commit()
         else:
+            logger.warning(f"[UOW] Exception detected ({exc_val}), rolling back session")
             await self.rollback()
 
         await self.session.close()
@@ -44,3 +46,4 @@ class UnitOfWork:
     async def rollback(self) -> None:
         if self.session:
             await self.session.rollback()
+            logger.debug("[UOW] Session rolled back")

@@ -4,7 +4,7 @@ from dishka import FromDishka
 from loguru import logger
 
 from src.bot.routers.menu.handlers import on_start_command
-from src.core.utils.formatters import format_log_user
+from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
 from src.infrastructure.database.models.dto import UserDto
 from src.services.notification import NotificationService
@@ -18,13 +18,13 @@ async def on_unknown_state(
     dialog_manager: DialogManager,
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    logger.error(f"{format_log_user(user)} Unknown state")
+    logger.error(f"{log(user)} Unknown state")
     await notification_service.notify_user(
         user=user,
         payload=MessagePayload(i18n_key="ntf-error-unknown-state"),
     )
 
-    logger.debug(f"{format_log_user(user)} Restarting dialog")
+    logger.debug(f"{log(user)} Restarting dialog")
     await on_start_command(message=event.update.message, user=user, dialog_manager=dialog_manager)
 
 
@@ -34,11 +34,11 @@ async def on_unknown_intent(
     dialog_manager: DialogManager,
     notification_service: FromDishka[NotificationService],
 ) -> None:
-    logger.error(f"{format_log_user(user)} Unknown intent")
+    logger.error(f"{log(user)} Unknown intent")
     await notification_service.notify_user(
         user=user,
         payload=MessagePayload(i18n_key="ntf-error-unknown-intent"),
     )
 
-    logger.debug(f"{format_log_user(user)} Restarting dialog")
+    logger.debug(f"{log(user)} Restarting dialog")
     await on_start_command(message=event.update.message, user=user, dialog_manager=dialog_manager)

@@ -27,17 +27,16 @@ class Subscription(StatesGroup):
 class Dashboard(StatesGroup):
     MAIN = State()
     STATISTICS = State()
-    ACCESS = State()
 
 
 class DashboardBroadcast(StatesGroup):
     MAIN = State()
-    TO_ALL = State()
-    TO_USER = State()
-    SUBSCRIBED = State()
-    UNSUBSCRIBED = State()
-    EXPIRED = State()
-    LAST_SENT = State()
+    LIST = State()
+    VIEW = State()
+    PLAN = State()
+    SEND = State()
+    CONTENT = State()
+    BUTTONS = State()
 
 
 class DashboardPromocodes(StatesGroup):
@@ -46,6 +45,13 @@ class DashboardPromocodes(StatesGroup):
     CREATE = State()
     DELETE = State()
     EDIT = State()
+
+
+class DashboardAccess(StatesGroup):
+    MAIN = State()
+    CONDITIONS = State()
+    RULES = State()
+    CHANNEL = State()
 
 
 class DashboardUsers(StatesGroup):
@@ -71,15 +77,12 @@ class DashboardRemnashop(StatesGroup):
     ADMINS = State()
     REFERRAL = State()
     ADVERTISING = State()
-    LOGS = State()
 
 
 class RemnashopGateways(StatesGroup):
     MAIN = State()
     SETTINGS = State()
     FIELD = State()
-    MERCHANT = State()
-    SECRET = State()
     CURRENCY = State()
 
 

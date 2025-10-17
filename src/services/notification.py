@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Optional, Union, cast
+from typing import Any, Optional, cast
 
 from aiogram import Bot
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
@@ -18,16 +18,12 @@ from src.core.enums import (
     UserRole,
 )
 from src.core.i18n.translator import get_translated_kwargs
-from src.core.storage.keys import SystemNotificationSettingsKey, UserNotificationSettingsKey
 from src.core.utils.formatters import i18n_format_collapse_tags
 from src.core.utils.message_payload import MessagePayload
-from src.core.utils.types import AnyKeyboard, AnyNotification
+from src.core.utils.types import AnyKeyboard
 from src.infrastructure.database.models.dto import UserDto
-from src.infrastructure.redis.notification_settings import (
-    SystemNotificationDto,
-    UserNotificationDto,
-)
 from src.infrastructure.redis.repository import RedisRepository
+from src.services.settings import SettingsService
 
 from .base import BaseService
 from .user import UserService
@@ -35,6 +31,7 @@ from .user import UserService
 
 class NotificationService(BaseService):
     user_service: UserService
+    settings_service: SettingsService
 
     def __init__(
         self,
@@ -45,9 +42,11 @@ class NotificationService(BaseService):
         translator_hub: TranslatorHub,
         #
         user_service: UserService,
+        settings_service: SettingsService,
     ) -> None:
         super().__init__(config, bot, redis_client, redis_repository, translator_hub)
         self.user_service = user_service
+        self.settings_service = settings_service
 
     async def notify_user(
         self,
@@ -59,7 +58,7 @@ class NotificationService(BaseService):
             logger.warning("Skipping user notification: user object is empty")
             return False
 
-        if ntf_type and not await self._is_notification_enabled(ntf_type):
+        if ntf_type and not await self.settings_service.is_notification_enabled(ntf_type):
             logger.debug(
                 f"Skipping user notification for '{user.telegram_id}': "
                 f"notification type is disabled in settings"
@@ -83,7 +82,7 @@ class NotificationService(BaseService):
         if not devs:
             devs = [self._get_temp_dev()]
 
-        if not await self._is_notification_enabled(ntf_type):
+        if not await self.settings_service.is_notification_enabled(ntf_type):
             logger.debug("Skipping system notification: notification type is disabled in settings")
             return []
 
@@ -145,28 +144,6 @@ class NotificationService(BaseService):
 
     #
 
-    async def get_system_settings(self) -> SystemNotificationDto:
-        return await self.redis_repository.get(  # type: ignore[return-value]
-            key=SystemNotificationSettingsKey(),
-            validator=SystemNotificationDto,
-            default=SystemNotificationDto(),
-        )
-
-    async def set_system_settings(self, data: SystemNotificationDto) -> None:
-        await self.redis_repository.set(key=SystemNotificationSettingsKey(), value=data)
-
-    async def get_user_settings(self) -> UserNotificationDto:
-        return await self.redis_repository.get(  # type: ignore[return-value]
-            key=UserNotificationSettingsKey(),
-            validator=UserNotificationDto,
-            default=UserNotificationDto(),
-        )
-
-    async def set_user_settings(self, data: UserNotificationDto) -> None:
-        await self.redis_repository.set(key=UserNotificationSettingsKey(), value=data)
-
-    #
-
     async def _send_message(self, user: UserDto, payload: MessagePayload) -> Optional[Message]:
         try:
             reply_markup = self._prepare_reply_markup(
@@ -177,12 +154,12 @@ class NotificationService(BaseService):
                 user.telegram_id,
             )
 
-            if payload.media and payload.media_type:
+            if (payload.media or payload.media_id) and payload.media_type:
                 sent_message = await self._send_media_message(user, payload, reply_markup)
             else:
-                if payload.media and not payload.media_type:
+                if (payload.media or payload.media_id) and not payload.media_type:
                     logger.warning(
-                        f"Validation error: Media provided but media_type is missing "
+                        f"Validation warning: Media provided without media_type "
                         f"for chat '{user.telegram_id}'. Sending as text message"
                     )
                 sent_message = await self._send_text_message(user, payload, reply_markup)
@@ -220,14 +197,18 @@ class NotificationService(BaseService):
 
         assert payload.media_type
         send_func = payload.media_type.get_function(self.bot)
-        media_arg_name = payload.media_type.lower() if payload.media_type else "photo"
+        media_arg_name = payload.media_type.lower()
+
+        media_input = payload.media or payload.media_id
+        if media_input is None:
+            raise ValueError(f"Missing media content for {payload.media_type}")
 
         tg_payload = {
             "chat_id": user.telegram_id,
             "caption": message_text,
             "reply_markup": reply_markup,
             "message_effect_id": payload.message_effect,
-            media_arg_name: payload.media,
+            media_arg_name: media_input,
         }
         return cast(Message, await send_func(**tg_payload))
 
@@ -304,17 +285,6 @@ class NotificationService(BaseService):
             logger.error(
                 f"Failed to delete message '{message_id}' in chat '{chat_id}': {exception}"
             )
-
-    async def _is_notification_enabled(self, ntf_type: AnyNotification) -> bool:
-        settings: Union[UserNotificationDto, SystemNotificationDto]
-        if isinstance(ntf_type, UserNotificationType):
-            settings = await self.get_user_settings()
-        elif isinstance(ntf_type, SystemNotificationType):
-            settings = await self.get_system_settings()
-        else:
-            return False
-
-        return getattr(settings, ntf_type.value.lower(), False)
 
     def _get_translated_text(
         self,

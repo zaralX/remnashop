@@ -25,6 +25,7 @@ class BaseSubscriptionDto(TrackableDto):
     expire_at: Optional[datetime]
     url: str
     plan: "PlanSnapshotDto"
+    is_trial: bool = False
 
     @property
     def expiry_time(self) -> Optional[timedelta]:

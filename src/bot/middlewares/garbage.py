@@ -5,7 +5,7 @@ from loguru import logger
 
 from src.core.constants import USER_KEY
 from src.core.enums import Command, MiddlewareEventType
-from src.core.utils.formatters import format_log_user
+from src.core.utils.formatters import format_user_log as log
 from src.infrastructure.database.models.dto import UserDto
 
 from .base import EventTypedMiddleware
@@ -25,6 +25,6 @@ class GarbageMiddleware(EventTypedMiddleware):
 
         if message.text != f"/{Command.START.value.command}":
             await message.delete()
-            logger.debug(f"{format_log_user(user)} Message deleted")
+            logger.debug(f"{log(user)} Message deleted")
 
         return await handler(event, data)

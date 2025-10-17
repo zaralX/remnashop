@@ -8,7 +8,6 @@ from loguru import logger
 
 from src.core.constants import CONTAINER_KEY, USER_KEY
 from src.core.enums import MiddlewareEventType, SystemNotificationType
-from src.core.utils.formatters import format_log_user
 from src.core.utils.message_payload import MessagePayload
 from src.infrastructure.database.models.dto import UserDto
 from src.services.notification import NotificationService
@@ -46,7 +45,6 @@ class UserMiddleware(EventTypedMiddleware):
 
         if user is None:
             user = await user_service.create(aiogram_user)
-            logger.info(f"{format_log_user(user)} Created new user")
             await notification_service.system_notify(
                 payload=MessagePayload(
                     i18n_key="ntf-event-new-user",

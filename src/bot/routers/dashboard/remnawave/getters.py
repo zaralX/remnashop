@@ -16,7 +16,7 @@ from src.core.i18n.translator import get_translated_kwargs
 from src.core.utils.formatters import (
     format_country_code,
     format_percent,
-    i18n_format_bytes_to_gb,
+    i18n_format_bytes_to_unit,
     i18n_format_seconds,
 )
 
@@ -36,8 +36,8 @@ async def system_getter(
     return {
         "cpu_cores": response.cpu.physical_cores,
         "cpu_threads": response.cpu.cores,
-        "ram_used": i18n_format_bytes_to_gb(response.memory.active),
-        "ram_total": i18n_format_bytes_to_gb(response.memory.total),
+        "ram_used": i18n_format_bytes_to_unit(response.memory.active),
+        "ram_total": i18n_format_bytes_to_unit(response.memory.total),
         "ram_used_percent": format_percent(
             part=response.memory.active,
             whole=response.memory.total,
@@ -114,8 +114,8 @@ async def nodes_getter(
     for node in response.root:
         kwargs_for_i18n = {
             "xray_uptime": i18n_format_seconds(node.xray_uptime),
-            "traffic_used": i18n_format_bytes_to_gb(node.traffic_used_bytes),
-            "traffic_limit": i18n_format_bytes_to_gb(node.traffic_limit_bytes, round_up=True),
+            "traffic_used": i18n_format_bytes_to_unit(node.traffic_used_bytes),
+            "traffic_limit": i18n_format_bytes_to_unit(node.traffic_limit_bytes, round_up=True),
         }
 
         translated_data = get_translated_kwargs(i18n, kwargs_for_i18n)

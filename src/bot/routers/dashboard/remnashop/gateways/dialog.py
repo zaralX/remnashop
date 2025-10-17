@@ -21,10 +21,10 @@ from src.core.enums import BannerName, Currency
 from .getters import currency_getter, field_getter, gateway_getter, gateways_getter
 from .handlers import (
     on_active_toggle,
-    on_default_currency_selected,
+    on_default_currency_select,
     on_field_input,
-    on_field_selected,
-    on_gateway_selected,
+    on_field_select,
+    on_gateway_select,
     on_gateway_test,
 )
 
@@ -36,7 +36,7 @@ gateways = Window(
             Button(
                 text=I18nFormat("btn-gateway-title", gateway_type=F["item"]["gateway_type"]),
                 id="select_gateway",
-                on_click=on_gateway_selected,
+                on_click=on_gateway_select,
             ),
             Button(
                 text=I18nFormat("btn-gateway-test"),
@@ -83,7 +83,7 @@ gateway_settings = Window(
             item_id_getter=lambda item: item["field"],
             items="settings",
             type_factory=str,
-            on_click=on_field_selected,
+            on_click=on_field_select,
         ),
         width=2,
     ),
@@ -112,7 +112,7 @@ gateway_field = Window(
         SwitchTo(
             text=I18nFormat("btn-back"),
             id="back",
-            state=RemnashopGateways.MAIN,
+            state=RemnashopGateways.SETTINGS,
         ),
     ),
     MessageInput(func=on_field_input),
@@ -136,7 +136,7 @@ default_currency = Window(
             item_id_getter=lambda item: item["currency"],
             items="currency_list",
             type_factory=Currency,
-            on_click=on_default_currency_selected,
+            on_click=on_default_currency_select,
         ),
     ),
     Row(

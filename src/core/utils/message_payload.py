@@ -11,6 +11,7 @@ class MessagePayload(BaseModel):
     i18n_kwargs: dict[str, Any] = {}
 
     media: Optional[AnyInputFile] = None
+    media_id: Optional[str] = None
     media_type: Optional[MediaType] = None
     reply_markup: Optional[AnyKeyboard] = None
     auto_delete_after: Optional[int] = 5

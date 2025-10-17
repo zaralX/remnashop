@@ -3,11 +3,11 @@ from typing import Any
 from aiogram_dialog import DialogManager
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
-from loguru import logger
 
 from src.core.enums import Currency
 from src.infrastructure.database.models.dto import PaymentGatewayDto
 from src.services.payment_gateway import PaymentGatewayService
+from src.services.settings import SettingsService
 
 
 @inject
@@ -76,17 +76,15 @@ async def field_getter(
 @inject
 async def currency_getter(
     dialog_manager: DialogManager,
-    payment_gateway_service: FromDishka[PaymentGatewayService],
+    settings_service: FromDishka[SettingsService],
     **kwargs: Any,
 ) -> dict[str, Any]:
-    default_currency = await payment_gateway_service.get_default_currency()
-
     return {
         "currency_list": [
             {
                 "symbol": currency.symbol,
                 "currency": currency.value,
-                "enabled": currency == default_currency,
+                "enabled": currency == await settings_service.get_default_currency(),
             }
             for currency in Currency
         ]

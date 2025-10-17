@@ -73,12 +73,15 @@ class WebhookService(BaseService):
     async def _set(self, bot_id: int, webhook_hash: str) -> None:
         key: WebhookLockKey = WebhookLockKey(bot_id=bot_id, webhook_hash=webhook_hash)
         await self.redis_repository.set(key, value=None)
+        logger.debug(f"Set webhook lock key '{key.pack()}' in Redis")
 
     async def _clear(self, bot_id: int) -> None:
         key: WebhookLockKey = WebhookLockKey(bot_id=bot_id, webhook_hash="*")
         keys: list[bytes] = await self.redis_repository.client.keys(key.pack())
 
         if not keys:
+            logger.debug(f"No webhook lock keys to clear for bot '{bot_id}'")
             return
 
         await self.redis_repository.client.delete(*keys)
+        logger.debug(f"Cleared {len(keys)} webhook lock keys for bot '{bot_id}'")

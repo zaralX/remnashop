@@ -87,6 +87,14 @@ def setup_logger() -> None:
     intercept_handler = InterceptHandler()
     logging.basicConfig(handlers=[intercept_handler], level=logging.INFO, force=True)
 
-    for logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access", "fastapi", "httpx"):
+    for logger_name in (
+        "uvicorn",
+        "uvicorn.error",
+        "uvicorn.access",
+        "fastapi",
+        "httpx",
+    ):
         logging.getLogger(logger_name).handlers = [intercept_handler]
         logging.getLogger(logger_name).propagate = False
+
+    logging.getLogger("httpx._client").level = logging.WARNING

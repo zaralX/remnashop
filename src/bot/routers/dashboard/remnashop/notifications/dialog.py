@@ -7,7 +7,7 @@ from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.enums import BannerName, SystemNotificationType, UserNotificationType
 
 from .getters import system_types_getter, user_types_getter
-from .handlers import on_system_type_selected, on_user_type_selected
+from .handlers import on_system_type_select, on_user_type_select
 
 notifications = Window(
     Banner(BannerName.DASHBOARD),
@@ -51,7 +51,7 @@ user = Window(
             item_id_getter=lambda item: item["type"],
             items="types",
             type_factory=UserNotificationType,
-            on_click=on_user_type_selected,
+            on_click=on_user_type_select,
         ),
     ),
     Row(
@@ -80,7 +80,7 @@ system = Window(
             item_id_getter=lambda item: item["type"],
             items="types",
             type_factory=SystemNotificationType,
-            on_click=on_system_type_selected,
+            on_click=on_system_type_select,
         ),
     ),
     Row(

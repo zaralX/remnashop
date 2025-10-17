@@ -1,26 +1,23 @@
 import uuid
-from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
 from aiogram import Bot
 from fluentogram import TranslatorHub
 from loguru import logger
-from pydantic import SecretStr
 from redis.asyncio import Redis
 
 from src.core.config import AppConfig
 from src.core.enums import (
     Currency,
-    Locale,
     PaymentGatewayType,
+    PlanType,
     PurchaseType,
     SystemNotificationType,
     TransactionStatus,
 )
-from src.core.security.crypto import decrypt, encrypt
-from src.core.storage.keys import DefaultCurrencyKey
-from src.core.utils.formatters import i18n_format_days, i18n_format_limit
+from src.core.utils.formatters import format_user_log as log
+from src.core.utils.formatters import i18n_format_days, i18n_format_limit, i18n_format_traffic_limit
 from src.infrastructure.database import UnitOfWork
 from src.infrastructure.database.models.dto import (
     AnyGatewaySettingsDto,
@@ -31,9 +28,20 @@ from src.infrastructure.database.models.dto import (
     TransactionDto,
     UserDto,
 )
+from src.infrastructure.database.models.dto.payment_gateway import (
+    CryptomusGatewaySettingsDto,
+    HeleketGatewaySettingsDto,
+    UrlpayGatewaySettingsDto,
+    YookassaGatewaySettingsDto,
+    YoomoneyGatewaySettingsDto,
+)
+from src.infrastructure.database.models.sql.payment_gateway import PaymentGateway
 from src.infrastructure.payment_gateways import BasePaymentGateway, PaymentGatewayFactory
 from src.infrastructure.redis import RedisRepository
-from src.infrastructure.taskiq.tasks.notifications import send_system_notification_task
+from src.infrastructure.taskiq.tasks.notifications import (
+    send_system_notification_task,
+    send_test_transaction_notification_task,
+)
 from src.infrastructure.taskiq.tasks.subscriptions import purchase_subscription_task
 from src.services.subscription import SubscriptionService
 
@@ -45,6 +53,7 @@ from .transaction import TransactionService
 class PaymentGatewayService(BaseService):
     uow: UnitOfWork
     transaction_service: TransactionService
+    subscription_service: SubscriptionService
     payment_gateway_factory: PaymentGatewayFactory
 
     def __init__(
@@ -66,35 +75,96 @@ class PaymentGatewayService(BaseService):
         self.subscription_service = subscription_service
         self.payment_gateway_factory = payment_gateway_factory
 
+    async def create_default(self) -> None:
+        for gateway_type in PaymentGatewayType:
+            settings: Optional[AnyGatewaySettingsDto]
+
+            if await self.get_by_type(gateway_type):
+                continue
+
+            match gateway_type:
+                case PaymentGatewayType.TELEGRAM_STARS:
+                    currency = Currency.XTR
+                    is_active = True
+                    settings = None
+                case PaymentGatewayType.YOOKASSA:
+                    currency = Currency.RUB
+                    is_active = False
+                    settings = YookassaGatewaySettingsDto()
+                case PaymentGatewayType.YOOMONEY:
+                    currency = Currency.RUB
+                    is_active = False
+                    settings = YoomoneyGatewaySettingsDto()
+                case PaymentGatewayType.CRYPTOMUS:
+                    currency = Currency.USD
+                    is_active = False
+                    settings = CryptomusGatewaySettingsDto()
+                case PaymentGatewayType.HELEKET:
+                    currency = Currency.USD
+                    is_active = False
+                    settings = HeleketGatewaySettingsDto()
+                case PaymentGatewayType.URLPAY:
+                    currency = Currency.RUB
+                    is_active = False
+                    settings = UrlpayGatewaySettingsDto()
+                case _:
+                    logger.warning(f"Unhandled payment gateway type '{gateway_type}' — skipping")
+                    return
+
+            payment_gateway = PaymentGatewayDto(
+                type=gateway_type,
+                currency=currency,
+                is_active=is_active,
+                settings=settings,
+            )
+
+            db_payment_gateway = PaymentGateway(**payment_gateway.model_dump())
+            db_payment_gateway = await self.uow.repository.gateways.create(db_payment_gateway)
+
+            logger.info(f"Payment gateway '{gateway_type}' created")
+
     async def get(self, gateway_id: int) -> Optional[PaymentGatewayDto]:
         db_gateway = await self.uow.repository.gateways.get(gateway_id)
-        return self._decrypt_gateway_key(PaymentGatewayDto.from_model(db_gateway))
+
+        if not db_gateway:
+            logger.warning(f"Payment gateway '{gateway_id}' not found")
+            return None
+
+        logger.debug(f"Retrieved payment gateway '{gateway_id}'")
+        return PaymentGatewayDto.from_model(db_gateway, decrypt=True)
 
     async def get_by_type(self, gateway_type: PaymentGatewayType) -> Optional[PaymentGatewayDto]:
         db_gateway = await self.uow.repository.gateways.get_by_type(gateway_type)
-        return self._decrypt_gateway_key(PaymentGatewayDto.from_model(db_gateway))
+
+        if not db_gateway:
+            logger.warning(f"Payment gateway of type '{gateway_type}' not found")
+            return None
+
+        logger.debug(f"Retrieved payment gateway of type '{gateway_type}'")
+        return PaymentGatewayDto.from_model(db_gateway, decrypt=True)
 
     async def get_all(self) -> list[PaymentGatewayDto]:
         db_gateways = await self.uow.repository.gateways.get_all()
-        return PaymentGatewayDto.from_model_list(db_gateways)  # NOTE: NOT DECRYPT
+        logger.debug(f"Retrieved '{len(db_gateways)}' payment gateways")
+        return PaymentGatewayDto.from_model_list(db_gateways, decrypt=False)
 
     async def update(self, gateway: PaymentGatewayDto) -> Optional[PaymentGatewayDto]:
         updated_data = gateway.changed_data
 
         if gateway.settings and gateway.settings.changed_data:
-            encrypted_settings = self._encrypt_gateway_key(gateway.settings)
-            updated_data["settings"] = encrypted_settings.model_dump(by_alias=True)
+            updated_data["settings"] = gateway.settings.prepare_init_data(encrypt=True)
 
         db_updated_gateway = await self.uow.repository.gateways.update(
-            gateway_id=gateway.id,
+            gateway_id=gateway.id,  # type: ignore[arg-type]
             **updated_data,
         )
-
-        return self._decrypt_gateway_key(PaymentGatewayDto.from_model(db_updated_gateway))
+        logger.info(f"Payment gateway '{gateway.type}' updated")
+        return PaymentGatewayDto.from_model(db_updated_gateway, decrypt=True)
 
     async def filter_active(self, is_active: bool = True) -> list[PaymentGatewayDto]:
         db_gateways = await self.uow.repository.gateways.filter_active(is_active)
-        return PaymentGatewayDto.from_model_list(db_gateways)  # NOTE: NOT DECRYPT
+        logger.debug(f"Filtered active gateways: '{is_active}', found '{len(db_gateways)}'")
+        return PaymentGatewayDto.from_model_list(db_gateways, decrypt=False)
 
     #
 
@@ -116,8 +186,8 @@ class PaymentGatewayService(BaseService):
             devices=plan.device_limit,
             duration=plan.duration,
         )
-        payment_id = uuid.uuid4()
 
+        payment_id = uuid.uuid4()
         transaction = TransactionDto(
             payment_id=payment_id,
             status=TransactionStatus.PENDING,
@@ -128,35 +198,53 @@ class PaymentGatewayService(BaseService):
             plan=plan,
         )
         await self.transaction_service.create(user, transaction)
+        logger.info(f"{log(user)} Created transaction '{payment_id}'")
 
         if pricing.is_free:
-            logger.info(f"Free transaction created for user '{user.telegram_id}'")
+            logger.info(f"{log(user)} Free transaction")
             return PaymentResult(payment_id=payment_id)
 
         pay_url = await gateway_instance.handle_create_payment(
-            payment_id=str(payment_id),
+            payment_id=payment_id,
             amount=pricing.final_amount,
             details=details,
         )
-        logger.info(f"Payment link created for user '{user.telegram_id}': '{pay_url}'")
+        logger.info(f"{log(user)} Payment link created: '{pay_url}'")
         return PaymentResult(payment_id=payment_id, pay_url=pay_url)
 
-    async def create_test_payment(self, gateway_type: PaymentGatewayType) -> str:
+    async def create_test_payment(self, user: UserDto, gateway_type: PaymentGatewayType) -> str:
         gateway_instance = await self._get_gateway_instance(gateway_type)
-
-        test_user = UserDto(
-            telegram_id=0,
-            name="test_user",
-            language=Locale.EN,
-        )
-        test_price = Decimal("1")
-        i18n = self.translator_hub.get_translator_by_locale(locale=test_user.language)
+        i18n = self.translator_hub.get_translator_by_locale(locale=user.language)
         test_details = i18n.get("test-payment")
-        payment_id = "test:" + str(uuid.uuid4())
 
+        test_payment_id = uuid.uuid4()
+        test_pricing = PriceDetailsDto()
+        test_plan = PlanSnapshotDto(
+            id=-1,
+            name="test",
+            type=PlanType.UNLIMITED,
+            traffic_limit=-1,
+            device_limit=-1,
+            duration=-1,
+            squad_ids=[],
+        )
+        test_transaction = TransactionDto(
+            payment_id=test_payment_id,
+            status=TransactionStatus.PENDING,
+            purchase_type=PurchaseType.NEW,
+            gateway_type=gateway_instance.gateway.type,
+            is_test=True,
+            pricing=test_pricing,
+            currency=gateway_instance.gateway.currency,
+            plan=test_plan,
+        )
+        await self.transaction_service.create(user, test_transaction)
+        logger.info(f"{log(user)} Created test transaction '{test_payment_id}'")
+
+        logger.info(f"Created test payment '{test_payment_id}' for gateway '{gateway_type}'")
         return await gateway_instance.handle_create_payment(
-            payment_id=payment_id,
-            amount=test_price,
+            payment_id=test_payment_id,
+            amount=test_pricing.final_amount,
             details=test_details,
         )
 
@@ -164,17 +252,21 @@ class PaymentGatewayService(BaseService):
         transaction = await self.transaction_service.get(payment_id)
 
         if not transaction or not transaction.user:
-            logger.critical(f"Transaction or user not found for {payment_id}")
+            logger.critical(f"Transaction or user not found for '{payment_id}'")
             return
 
         if transaction.is_completed:
-            logger.critical(f"Transaction {payment_id} already completed")
+            logger.critical(f"{log(transaction.user)} Transaction '{payment_id}' already completed")
             return
 
         transaction.status = TransactionStatus.COMPLETED
         await self.transaction_service.update(transaction)
 
-        logger.info(f"Payment succeeded '{payment_id}' from '{transaction.user.telegram_id}'")
+        logger.info(f"{log(transaction.user)} Payment succeeded '{payment_id}'")
+
+        if transaction.is_test:
+            await send_test_transaction_notification_task.kiq(user=transaction.user)
+            return
 
         # TODO: Add refferal logic
 
@@ -198,7 +290,7 @@ class PaymentGatewayService(BaseService):
                     "plan_type": plan.type if plan else "N/A",
                 },
                 "previous_plan_traffic_limit": (
-                    i18n_format_limit(plan.traffic_limit) if plan else "N/A"
+                    i18n_format_traffic_limit(plan.traffic_limit) if plan else "N/A"
                 ),
                 "previous_plan_device_limit": (
                     i18n_format_limit(plan.device_limit) if plan else "N/A"
@@ -218,7 +310,7 @@ class PaymentGatewayService(BaseService):
             "user_username": transaction.user.username or False,
             "plan_name": transaction.plan.name,
             "plan_type": transaction.plan.type,
-            "plan_traffic_limit": i18n_format_limit(transaction.plan.traffic_limit),
+            "plan_traffic_limit": i18n_format_traffic_limit(transaction.plan.traffic_limit),
             "plan_device_limit": i18n_format_limit(transaction.plan.device_limit),
             "plan_duration": i18n_format_days(transaction.plan.duration),
         }
@@ -236,56 +328,26 @@ class PaymentGatewayService(BaseService):
             subscription,
         )
 
-        logger.debug("Called tasks for payment")
+        logger.debug(f"{log(transaction.user)} Called tasks for payment")
 
     async def handle_payment_canceled(self, payment_id: UUID) -> None:
         transaction = await self.transaction_service.get(payment_id)
 
         if not transaction or not transaction.user:
-            logger.critical(f"Transaction or user not found for {payment_id}")
+            logger.critical(f"Transaction or user not found for '{payment_id}'")
             return
-
-        logger.info(f"Payment canceled '{payment_id}' from '{transaction.user.telegram_id}'")
 
         transaction.status = TransactionStatus.CANCELED
         await self.transaction_service.update(transaction)
-
-    #
-
-    async def get_default_currency(self) -> Currency:
-        return await self.redis_repository.get(  # type: ignore[return-value]
-            key=DefaultCurrencyKey(),
-            validator=Currency,
-            default=Currency.RUB,
-        )
-
-    async def set_default_currency(self, currency: Currency) -> None:
-        await self.redis_repository.set(key=DefaultCurrencyKey(), value=currency)
+        logger.info(f"{log(transaction.user)} Payment canceled '{payment_id}'")
 
     #
 
     async def _get_gateway_instance(self, gateway_type: PaymentGatewayType) -> BasePaymentGateway:
+        logger.debug(f"Creating gateway instance for type '{gateway_type}'")
         gateway = await self.get_by_type(gateway_type)
 
         if not gateway:
             raise ValueError(f"Payment gateway of type '{gateway_type}' not found")
 
         return self.payment_gateway_factory(gateway)
-
-    def _encrypt_gateway_key(
-        self,
-        gateway_settings: AnyGatewaySettingsDto,
-    ) -> AnyGatewaySettingsDto:
-        if gateway_settings.key:
-            encrypted_key_str = encrypt(gateway_settings.key.get_secret_value())
-            gateway_settings.key = encrypted_key_str  # type: ignore[assignment]
-        return gateway_settings
-
-    def _decrypt_gateway_key(
-        self,
-        gateway_dto: Optional[PaymentGatewayDto],
-    ) -> Optional[PaymentGatewayDto]:
-        if gateway_dto and gateway_dto.settings and gateway_dto.settings.key:
-            decrypted_value = decrypt(gateway_dto.settings.key.get_secret_value())
-            gateway_dto.settings.key = SecretStr(decrypted_value)
-        return gateway_dto
