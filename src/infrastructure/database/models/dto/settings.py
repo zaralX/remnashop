@@ -9,6 +9,7 @@ from .base import TrackableDto
 
 class SystemNotificationDto(TrackableDto):  # == SystemNotificationType
     bot_lifetime: bool = True
+    bot_update: bool = True
     user_registered: bool = True
     subscription: bool = True
     promocode_activated: bool = True
@@ -41,6 +42,7 @@ class SettingsDto(TrackableDto):
     channel_required: bool = False
 
     rules_link: SecretStr = SecretStr("https://telegram.org/tos/")
+    channel_id: Optional[int] = False
     channel_link: SecretStr = SecretStr("@remna_shop")
 
     access_mode: AccessMode = AccessMode.PUBLIC
@@ -50,9 +52,12 @@ class SettingsDto(TrackableDto):
     system_notifications: SystemNotificationDto = SystemNotificationDto()
 
     @property
-    def get_raw_channel_link(self) -> str:
-        return self.channel_link.get_secret_value()[1:-1]
+    def channel_has_username(self) -> bool:
+        return self.channel_link.get_secret_value().startswith("@")
 
     @property
     def get_url_channel_link(self) -> str:
-        return f"t.me/{self.get_raw_channel_link}"
+        if self.channel_has_username:
+            return f"t.me/{self.channel_link.get_secret_value()[1:]}"
+        else:
+            return self.channel_link.get_secret_value()

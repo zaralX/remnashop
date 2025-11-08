@@ -6,7 +6,7 @@ from dishka import AsyncContainer
 from loguru import logger
 
 from src.bot.keyboards import CALLBACK_RULES_ACCEPT, get_rules_keyboard
-from src.core.config.app import AppConfig
+from src.core.config import AppConfig
 from src.core.constants import CONTAINER_KEY
 from src.core.enums import MiddlewareEventType
 from src.core.utils.message_payload import MessagePayload
@@ -30,7 +30,7 @@ class RulesMiddleware(EventTypedMiddleware):
         aiogram_user: Optional[AiogramUser] = self._get_aiogram_user(event)
 
         if aiogram_user is None or aiogram_user.is_bot:
-            logger.warning(f"{self.tag} Terminating middleware: event from bot or missing user")
+            logger.warning("Terminating middleware: event from bot or missing user")
             return
 
         container: AsyncContainer = data[CONTAINER_KEY]

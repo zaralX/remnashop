@@ -6,7 +6,7 @@ from dishka.integrations.aiogram_dialog import inject
 from remnawave import RemnawaveSDK
 from remnawave.models import GetAllInternalSquadsResponseDto
 
-from src.core.config.app import AppConfig
+from src.core.config import AppConfig
 from src.core.constants import DATETIME_FORMAT
 from src.core.enums import UserRole
 from src.core.i18n.keys import ByteUnitKey
@@ -101,7 +101,7 @@ async def subscription_getter(
     if not subscription:
         raise ValueError(f"Current subscription for user '{target_telegram_id}' not found")
 
-    remna_user = await remnawave_service.get_user(target_user)
+    remna_user = await remnawave_service.get_user(subscription.user_remna_id)
 
     if not remna_user:
         raise ValueError(f"User Remnawave '{target_telegram_id}' not found")
@@ -200,7 +200,7 @@ async def discount_getter(
     dialog_manager: DialogManager,
     **kwargs: Any,
 ) -> dict[str, Any]:
-    return {"percentages": [1, 5, 10, 20, 25, 30, 40, 50, 60, 70, 80, 90]}
+    return {"percentages": [0, 5, 10, 25, 40, 50, 70, 80, 100]}
 
 
 async def traffic_limit_getter(

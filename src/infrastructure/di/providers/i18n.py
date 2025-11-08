@@ -7,7 +7,7 @@ from fluentogram.storage import FileStorage
 from loguru import logger
 
 from src.core.config import AppConfig
-from src.core.constants import TRANSLATIONS_DIR, USER_KEY
+from src.core.constants import USER_KEY
 from src.infrastructure.database.models.dto import UserDto
 
 
@@ -16,7 +16,7 @@ class I18nProvider(Provider):
 
     @provide
     def get_hub(self, config: AppConfig) -> TranslatorHub:
-        storage = FileStorage(path=TRANSLATIONS_DIR / "{locale}")
+        storage = FileStorage(path=config.translations_dir / "{locale}")
         locales_map: dict[str, tuple[str, ...]] = {}
 
         for locale_code in config.locales:
@@ -31,7 +31,7 @@ class I18nProvider(Provider):
             )
 
         logger.debug(
-            f"[I18N] Loaded TranslatorHub with locales: "
+            f"Loaded TranslatorHub with locales: "
             f"{[locale.value for locale in locales_map.keys()]}, "  # type: ignore[attr-defined]
             f"default={config.default_locale.value}"
         )
@@ -48,13 +48,11 @@ class I18nProvider(Provider):
         user: Optional[UserDto] = middleware_data.get(USER_KEY)
 
         if user:
-            logger.debug(
-                f"[I18N] Translator for user '{user.telegram_id}' with locale={user.language}"
-            )
+            logger.debug(f"Translator for user '{user.telegram_id}' with locale={user.language}")
             return hub.get_translator_by_locale(locale=user.language)
 
         else:
             logger.debug(
-                f"[I18N] Translator for anonymous user with default locale={config.default_locale}"
+                f"Translator for anonymous user with default locale={config.default_locale}"
             )
             return hub.get_translator_by_locale(locale=config.default_locale)

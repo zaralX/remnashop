@@ -6,7 +6,9 @@ from aiogram_dialog.api.internal import FakeUser
 from dishka import AsyncContainer
 from loguru import logger
 
-from src.core.constants import CONTAINER_KEY, USER_KEY
+from src.bot.keyboards import get_user_keyboard
+from src.core.config import AppConfig
+from src.core.constants import CONTAINER_KEY, IS_SUPER_DEV_KEY, USER_KEY
 from src.core.enums import MiddlewareEventType, SystemNotificationType
 from src.core.utils.message_payload import MessagePayload
 from src.infrastructure.database.models.dto import UserDto
@@ -35,11 +37,12 @@ class UserMiddleware(EventTypedMiddleware):
         aiogram_user: Optional[AiogramUser] = self._get_aiogram_user(event)
 
         if aiogram_user is None or aiogram_user.is_bot:
-            logger.warning(f"{self.tag} Terminating middleware: event from bot or missing user")
+            logger.warning("Terminating middleware: event from bot or missing user")
             return
 
         container: AsyncContainer = data[CONTAINER_KEY]
         notification_service: NotificationService = await container.get(NotificationService)
+        config: AppConfig = await container.get(AppConfig)
         user_service: UserService = await container.get(UserService)
         user: Optional[UserDto] = await user_service.get(telegram_id=aiogram_user.id)
 
@@ -55,6 +58,7 @@ class UserMiddleware(EventTypedMiddleware):
                     },
                     auto_delete_after=None,
                     add_close_button=True,
+                    reply_markup=get_user_keyboard(user.telegram_id),
                 ),
                 ntf_type=SystemNotificationType.USER_REGISTERED,
             )
@@ -63,5 +67,6 @@ class UserMiddleware(EventTypedMiddleware):
 
         await user_service.update_recent_activity(telegram_id=user.telegram_id)
         data[USER_KEY] = user
+        data[IS_SUPER_DEV_KEY] = user.telegram_id == config.bot.dev_id
 
         return await handler(event, data)

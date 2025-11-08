@@ -56,6 +56,8 @@ services:
 
     env_file:
       - .env
+    environment:
+      RESET_ASSETS: "${RESET_ASSETS:-false}"
 
     depends_on:
         remnashop-db:
@@ -66,7 +68,6 @@ services:
     volumes:
       - ./logs:/opt/remnashop/logs
       - ./assets:/opt/remnashop/assets
-      - ./assets_backup:/opt/remnashop/assets_backup
 
     networks:
       - remnawave-network

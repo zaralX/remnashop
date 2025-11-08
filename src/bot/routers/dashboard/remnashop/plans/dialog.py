@@ -23,8 +23,8 @@ from src.core.enums import BannerName, Currency, PlanAvailability, PlanType
 from .getters import (
     allowed_users_getter,
     availability_getter,
+    configurator_getter,
     durations_getter,
-    plan_getter,
     plans_getter,
     price_getter,
     prices_getter,
@@ -47,6 +47,7 @@ from .handlers import (
     on_plan_select,
     on_price_input,
     on_squad_select,
+    on_squads,
     on_traffic_input,
     on_type_select,
 )
@@ -58,7 +59,7 @@ plans = Window(
         SwitchTo(
             I18nFormat("btn-plans-create"),
             id="create",
-            state=RemnashopPlans.PLAN,
+            state=RemnashopPlans.CONFIGURATOR,
         ),
     ),
     ListGroup(
@@ -96,9 +97,9 @@ plans = Window(
     getter=plans_getter,
 )
 
-plan_config = Window(
+configurator = Window(
     Banner(BannerName.DASHBOARD),
-    I18nFormat("msg-plan-config"),
+    I18nFormat("msg-plan-configurator"),
     Row(
         SwitchTo(
             text=I18nFormat("btn-plan-name"),
@@ -153,10 +154,10 @@ plan_config = Window(
         ),
     ),
     Row(
-        SwitchTo(
+        Button(
             text=I18nFormat("btn-plan-squads"),
             id="squads",
-            state=RemnashopPlans.SQUADS,
+            on_click=on_squads,
         ),
     ),
     Row(
@@ -175,8 +176,8 @@ plan_config = Window(
         ),
     ),
     IgnoreUpdate(),
-    state=RemnashopPlans.PLAN,
-    getter=plan_getter,
+    state=RemnashopPlans.CONFIGURATOR,
+    getter=configurator_getter,
 )
 
 plan_name = Window(
@@ -186,7 +187,7 @@ plan_name = Window(
         SwitchTo(
             text=I18nFormat("btn-back"),
             id="back",
-            state=RemnashopPlans.PLAN,
+            state=RemnashopPlans.CONFIGURATOR,
         ),
     ),
     MessageInput(func=on_name_input),
@@ -211,7 +212,7 @@ plan_type = Window(
         SwitchTo(
             text=I18nFormat("btn-back"),
             id="back",
-            state=RemnashopPlans.PLAN,
+            state=RemnashopPlans.CONFIGURATOR,
         ),
     ),
     IgnoreUpdate(),
@@ -236,7 +237,7 @@ plan_availability = Window(
         SwitchTo(
             text=I18nFormat("btn-back"),
             id="back",
-            state=RemnashopPlans.PLAN,
+            state=RemnashopPlans.CONFIGURATOR,
         ),
     ),
     IgnoreUpdate(),
@@ -251,7 +252,7 @@ plan_traffic = Window(
         SwitchTo(
             text=I18nFormat("btn-back"),
             id="back",
-            state=RemnashopPlans.PLAN,
+            state=RemnashopPlans.CONFIGURATOR,
         ),
     ),
     MessageInput(func=on_traffic_input),
@@ -266,7 +267,7 @@ plan_devices = Window(
         SwitchTo(
             text=I18nFormat("btn-back"),
             id="back",
-            state=RemnashopPlans.PLAN,
+            state=RemnashopPlans.CONFIGURATOR,
         ),
     ),
     MessageInput(func=on_devices_input),
@@ -307,7 +308,7 @@ plan_durations = Window(
         SwitchTo(
             text=I18nFormat("btn-back"),
             id="back",
-            state=RemnashopPlans.PLAN,
+            state=RemnashopPlans.CONFIGURATOR,
         ),
     ),
     IgnoreUpdate(),
@@ -398,7 +399,7 @@ plan_allowed_users = Window(
         SwitchTo(
             text=I18nFormat("btn-back"),
             id="back",
-            state=RemnashopPlans.PLAN,
+            state=RemnashopPlans.CONFIGURATOR,
         ),
     ),
     MessageInput(func=on_allowed_user_input),
@@ -413,7 +414,7 @@ plan_squads = Window(
     Column(
         Select(
             text=I18nFormat(
-                "btn-plan-squad-choice",
+                "btn-squad-choice",
                 name=F["item"]["name"],
                 selected=F["item"]["selected"],
             ),
@@ -428,7 +429,7 @@ plan_squads = Window(
         SwitchTo(
             text=I18nFormat("btn-back"),
             id="back",
-            state=RemnashopPlans.PLAN,
+            state=RemnashopPlans.CONFIGURATOR,
         ),
     ),
     IgnoreUpdate(),
@@ -438,7 +439,7 @@ plan_squads = Window(
 
 router = Dialog(
     plans,
-    plan_config,
+    configurator,
     plan_name,
     plan_type,
     plan_availability,

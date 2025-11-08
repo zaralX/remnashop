@@ -63,7 +63,7 @@
 
     > User notifications: subscription expiring, expired, traffic exhausted.
 
-    > System notifications: bot lifecycle, new user registration, subscription activation, promocode activation, get trial, node status, first user connection, device add/remove events.
+    > System notifications: bot lifecycle, bot update, new user registration, subscription activation, promocode activation, get trial, node status, first user connection, device add/remove events.
 
 - **🧪 Trial**
     > Configurable trial setup through the plan configurator.
@@ -86,7 +86,7 @@
     > Two-level referral support.
 
 - **💳 Flexible Payment System**
-    > Supports multiple payment gateways: Telegram Stars, YooKassa, YooMoney, Cryptomus, Heleket, WataPay.
+    > Supports multiple payment gateways: Telegram Stars, YooKassa, YooMoney, Cryptomus, Heleket, CryptoPay, RoboKassa.
 
     > Payment gateway configurator.
 
@@ -186,11 +186,11 @@ Download `docker-compose.yml` compose-file and `.env` by running these commands:
 
 - Get `docker-compose.yml` file:
 
-    - For external panel (the bot is hosted on a separate server from the panel):
+    - For external panel **(the bot is hosted on a separate server from the panel)**:
     ```
     curl -o docker-compose.yml https://raw.githubusercontent.com/snoups/remnashop/refs/heads/main/docker-compose.prod.external.yml
     ```
-    - For internal panel (the bot and panel are hosted on the same server):
+    - For internal panel **(the bot and panel are hosted on the same server)**:
     ```
     curl -o docker-compose.yml https://raw.githubusercontent.com/snoups/remnashop/refs/heads/main/docker-compose.prod.internal.yml
     ```
@@ -207,12 +207,12 @@ Generate secret keys by running the following commands:
 
 - Generate secure keys
 ```
-sed -i "s/^APP_CRYPT_KEY=.*/APP_CRYPT_KEY=$(openssl rand -base64 32)/" .env && sed -i "s/^BOT_SECRET_TOKEN=.*/BOT_SECRET_TOKEN=$(openssl rand -hex 64)/" .env 
+sed -i "s|^APP_CRYPT_KEY=.*|APP_CRYPT_KEY=$(openssl rand -base64 32 | tr -d '\n')|" .env && sed -i "s|^BOT_SECRET_TOKEN=.*|BOT_SECRET_TOKEN=$(openssl rand -hex 64 | tr -d '\n')|" .env
 ```
 
 - Generate passwords
 ```
-sed -i "s/^DATABASE_PASSWORD=.*/DATABASE_PASSWORD=$(openssl rand -hex 24)/" .env && sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=$(openssl rand -hex 24)/" .env
+sed -i "s|^DATABASE_PASSWORD=.*|DATABASE_PASSWORD=$(openssl rand -hex 24 | tr -d '\n')|" .env && sed -i "s|^REDIS_PASSWORD=.*|REDIS_PASSWORD=$(openssl rand -hex 24 | tr -d '\n')|" .env
 ```
 
 Now, open the .env file and update the variables:
@@ -225,16 +225,19 @@ Now, open the .env file and update the variables:
 - **`REMNAWAVE_TOKEN`** : Remnawave API token, created in the panel.
 - **`REMNAWAVE_WEBHOOK_SECRET`** : Must match the value of `WEBHOOK_SECRET_HEADER` from `.env` the panel.
 
-    > [!IMPORTANT]
-    > The bot requires a properly configured webhook to function.  
-    > In the Remnawave Panel `.env` file, set:
-    > 
-    > ```
-    > WEBHOOK_ENABLED=true
-    > WEBHOOK_URL=https://bot.domain.com/api/v1/remnawave
-    > ```
-    > Replace `bot.domain.com` with your actual domain.  
-    > This step is critically important for the bot to receive events correctly.
+> [!WARNING]
+> Depending on your configuration, also pay attention to the following variables: **`BOT_MINI_APP_URL`**, **`REMNAWAVE_CADDY_TOKEN`**, **`REMNAWAVE_COOKIE`**.
+
+> [!IMPORTANT]
+> The bot requires a properly configured webhook to function.  
+> In the Remnawave Panel `.env` file, set:
+> 
+> ```
+> WEBHOOK_ENABLED=true
+> WEBHOOK_URL=https://bot.domain.com/api/v1/remnawave
+> ```
+> Replace `bot.domain.com` with your actual domain.  
+> This step is critically important for the bot to receive events correctly.
 
 
 ## Step 3 – Start the containers
@@ -261,7 +264,24 @@ You can use any proxy solution, similar to how it is done for [**Remnawave**](ht
 
 **Configure the following path to forward requests to the bot container:**
 
-`https://your-domain/api/v1` -> `http://remnawave:5000`
+`https://your-domain/api/v1` -> `http://remnashop:5000`
+
+
+## Step 5 – How to upgrade
+
+To update and restart the bot, run the following command:
+```
+cd /opt/remnashop && docker compose pull && docker compose down && RESET_ASSETS=true docker compose up -d && docker compose logs -f
+```
+
+When using `RESET_ASSETS=true`, the following actions are performed:
+  - All current assets are backed up with a timestamp (`/opt/remnashop/assets/*.bak`).
+  - New assets from the image are downloaded and unpacked.
+  - After the update, the bot will use the latest files.
+
+> [!CAUTION]
+> If you do not use `RESET_ASSETS=true`, the old assets will remain unchanged.  
+> This may cause the bot to work incorrectly after the update.
 
 
 # 🖼️ Banners
@@ -273,7 +293,8 @@ To set a custom banner, name it according to the target page and ensure it uses 
 Banners should be placed in: `/opt/remnashop/assets/banners/(locale)/`  
 Example: `/opt/remnashop/assets/banners/en/menu.gif`
 
-> **Important**: Do not delete the `default.jpg` file — it is required for proper operation.
+> [!IMPORTANT]
+> Do not delete the `default.jpg` file — it is required for proper operation.
 
 
 # 🌐 Translations
@@ -282,8 +303,9 @@ You can edit any translation file located in:
 
 After making changes, you need to restart the container for the updates to take effect.
 
-> **Important**: Currently, translation persistence during bot updates is not supported.  
-> When updating, your previous assets will be archived in: `/opt/remnashop/assets_backup/`
+> [!IMPORTANT]
+> Currently, translation persistence during bot updates is not supported.  
+> When updating, your previous assets will be archived in: `/opt/remnashop/assets/*.bak`
 
 
 # 💸 Project Support

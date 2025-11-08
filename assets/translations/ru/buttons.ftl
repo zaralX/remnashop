@@ -5,6 +5,15 @@ btn-back-main-menu = ↩️ Вернуться в главное меню
 btn-back-dashboard = ↩️ Вернуться в панель управления
 
 
+# Remnashop
+btn-remnashop-release-latest = 👀 Посмотреть
+btn-remnashop-how-upgrade = ❓ Как обновить
+btn-remnashop-github = ⭐ GitHub
+btn-remnashop-telegram = 👪 Telegram
+btn-remnashop-donate = 💰 Поддержать разработчика
+btn-remnashop-guide = ❓ Инструкция
+
+
 # Other
 btn-rules-accept = ✅ Принять правила
 btn-channel-join = ❤️ Перейти в канал
@@ -34,6 +43,11 @@ btn-statistics-current-page =
     *[OTHER] [page]
     }
 
+btn-squad-choice = { $selected -> 
+    [1] 🔘
+    *[0] ⚪
+    } { $name }
+
 
 # Menu
 btn-menu-connect = 🚀 Подключиться
@@ -50,6 +64,10 @@ btn-menu-devices = 📱 Мои устройства
 btn-menu-devices-empty = ⚠️ Нет привязанных устройств
 btn-menu-subscription = 💳 Подписка
 btn-menu-invite = 👥 Пригласить
+btn-menu-invite-copy = 🔗 Скопировать ссылку
+btn-menu-invite-send = 📩 Пригласить
+btn-menu-invite-users = 👥 Список приглашенных
+btn-menu-invite-qr = 🧾 QR-код
 btn-menu-support = 🆘 Поддержка
 btn-menu-dashboard = 🛠 Панель управления
 
@@ -62,6 +80,7 @@ btn-dashboard-promocodes = 🎟 Промокоды
 btn-dashboard-access = 🔓 Режим доступа
 btn-dashboard-remnawave = 🌊 RemnaWave
 btn-dashboard-remnashop = 🛍 RemnaShop
+btn-dashboard-importer = 📥 Импорт пользователей
 
 
 # Users
@@ -79,7 +98,6 @@ btn-user-message = 📩 Сообщение
 btn-user-role = 👮‍♂️ Изменить роль
 btn-user-transactions = 🧾 Транзакции
 btn-user-give-access = 🔑 Доступ к планам
-btn-user-role-choice = { role }
 btn-user-current-subscription = 💳 Текущая подписка
 btn-user-subscription-traffic-limit = 🌐 Лимит трафика
 btn-user-subscription-device-limit = 📱 Лимит устройств
@@ -99,7 +117,7 @@ btn-user-subscription-duration = { $operation ->
     *[SUB] -
     } { $duration }
 
-btn-user-allowed-plan-select = { $selected ->
+btn-user-allowed-plan-choice = { $selected ->
     [1] 🔘
     *[0] ⚪
     } { $plan_name }
@@ -141,7 +159,7 @@ btn-broadcast-viewing = 👀 Просмотр
 btn-broadcast-cancel = ⛔ Остановить рассылку
 btn-broadcast-delete = ❌ Удалить отправленное
 
-btn-broadcast-button-select = { $selected ->
+btn-broadcast-button-choice = { $selected ->
     [1] 🔘
     *[0] ⚪
     }
@@ -160,6 +178,7 @@ btn-broadcast =  { $status ->
 btn-goto-subscription = 💳 Купить подписку
 btn-goto-promocode = 🎟 Активировать промокод
 btn-goto-subscription-renew = 🔄 Продлить подписку
+btn-goto-user-profile = 👤 Перейти к пользователю
 
 
 # Promocodes
@@ -233,6 +252,7 @@ btn-notifications-system-choice = { $enabled ->
     *[0] ⚪
     } { $type ->
     [BOT_LIFETIME] Жизненный цикл бота
+    [BOT_UPDATE] Обновления бота
     [USER_REGISTERED] Регистрация пользователя
     [SUBSCRIPTION] Оформление подписки
     [PROMOCODE_ACTIVATED] Активация промокода
@@ -295,17 +315,21 @@ btn-plan-duration = ⌛ { $value ->
 btn-plan-duration-add = 🆕 Добавить длительность
 btn-plan-price-choice = 💸 { $price } { $currency }
 
-btn-plan-squad-choice = { $selected -> 
-    [1] 🔘
-    *[0] ⚪
-    } { $name }
-
 
 # RemnaWave
 btn-remnawave-users = 👥 Пользователи
 btn-remnawave-hosts = 🌐 Хосты
 btn-remnawave-nodes = 🖥️ Ноды
 btn-remnawave-inbounds = 🔌 Инбаунды
+
+
+# Importer
+btn-importer-from-xui = 💩 Панель 3X-UI
+btn-importer-from-xui-shop = 🛒 Бот 3xui-shop
+btn-importer-sync = 🌀 Запустить синхронизацию
+btn-importer-squads = 🔗 Внутренние сквады
+btn-importer-import-all = ✅ Импортировать всех
+btn-importer-import-active = ❇️ Импортировать активных
 
 
 # Subscription
@@ -324,3 +348,19 @@ btn-subscription-duration = { $period } | { $final_amount ->
     [0] 🎁
     *[HAS] { $final_amount }{ $currency }
     }
+
+
+# Promocodes
+btn-promocode-code = 🏷️ Код
+btn-promocode-type = 🔖 Тип награды
+btn-promocode-availability = ✴️ Доступ
+
+btn-promocode-active = { $is_active -> 
+    [1] 🟢
+    *[0] 🔴
+    } Статус
+
+btn-promocode-reward = 🎁 Награда
+btn-promocode-lifetime = ⌛ Время жизни
+btn-promocode-allowed = 👥 Разрешенные пользователи
+btn-promocode-confirm = ✅ Подтвердить
