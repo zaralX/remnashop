@@ -244,6 +244,7 @@ btn-notifications-user-choice = { $enabled ->
     [EXPIRES_IN_1_DAYS] Подписка истекает (1 дня)
     [EXPIRED] Подписка истекла
     [LIMITED] Трафик исчерпан
+    [EXPIRED_1_DAY_AGO] Подписка истекла (1 день)
     *[OTHER] { $type }
     }
 btn-notifications-system = ⚙️ Системные

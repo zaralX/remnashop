@@ -6,6 +6,9 @@ class WebhookLockKey(StorageKey, prefix="webhook_lock"):
     webhook_hash: str
 
 
+class LastNotifiedVersionKey(StorageKey, prefix="last_notified_version"): ...
+
+
 class AccessWaitListKey(StorageKey, prefix="access_wait_list"): ...
 
 

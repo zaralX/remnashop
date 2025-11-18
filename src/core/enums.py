@@ -127,6 +127,7 @@ class UserNotificationType(UpperStrEnum):  # == UserNotificationDto
     EXPIRES_IN_1_DAYS = auto()
     EXPIRED = auto()
     LIMITED = auto()
+    EXPIRED_1_DAY_AGO = auto()
 
 
 class UserRoleHierarchy(Enum):

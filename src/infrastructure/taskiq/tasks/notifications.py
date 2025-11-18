@@ -108,6 +108,9 @@ async def send_subscription_expire_notification_task(
     elif ntf_type == UserNotificationType.EXPIRED:
         i18n_key = "ntf-event-user-expired"
         i18n_kwargs_extra = {}
+    elif ntf_type == UserNotificationType.EXPIRED_1_DAY_AGO:
+        i18n_key = "ntf-event-user-expired_ago"
+        i18n_kwargs_extra = {"value": 1}
 
     user = await user_service.get(telegram_id)
 

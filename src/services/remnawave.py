@@ -374,6 +374,7 @@ class RemnawaveService(BaseService):
             RemnaUserEvent.EXPIRES_IN_72_HOURS,
             RemnaUserEvent.EXPIRES_IN_48_HOURS,
             RemnaUserEvent.EXPIRES_IN_24_HOURS,
+            RemnaUserEvent.EXPIRED_24_HOURS_AGO,
         }:
             logger.debug(
                 f"Sending expiration notification for RemnaUser '{remna_user.telegram_id}'"
@@ -382,17 +383,13 @@ class RemnawaveService(BaseService):
                 RemnaUserEvent.EXPIRES_IN_72_HOURS: UserNotificationType.EXPIRES_IN_3_DAYS,
                 RemnaUserEvent.EXPIRES_IN_48_HOURS: UserNotificationType.EXPIRES_IN_2_DAYS,
                 RemnaUserEvent.EXPIRES_IN_24_HOURS: UserNotificationType.EXPIRES_IN_1_DAYS,
+                RemnaUserEvent.EXPIRED_24_HOURS_AGO: UserNotificationType.EXPIRED_1_DAY_AGO,
             }
             await send_subscription_expire_notification_task.kiq(
                 remna_user=remna_user,
                 ntf_type=expire_map[RemnaUserEvent(event)],
                 i18n_kwargs=i18n_kwargs,
             )
-
-        elif event == RemnaUserEvent.EXPIRED_24_HOURS_AGO:
-            logger.debug(f"RemnaUser '{remna_user.telegram_id}' expired 24 hours ago")
-            await delete_current_subscription_task.kiq(user_telegram_id=remna_user.telegram_id)
-
         else:
             logger.warning(f"Unhandled user event '{event}' for '{remna_user.telegram_id}'")
 

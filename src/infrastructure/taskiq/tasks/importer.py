@@ -122,11 +122,9 @@ async def sync_all_users_from_panel_task(
                     await create_user_from_panel_task.kiq(remna_user)
                     added_subscription += 1
                 else:
-                    logger.success(remna_user.hwid_device_limit)
                     remna_subscription = RemnaSubscriptionDto.from_remna_user(
                         remna_user.model_dump()
                     )
-                    logger.success(remna_subscription.device_limit)
                     await sync_current_subscription_task.kiq(
                         remna_user.telegram_id, remna_subscription
                     )
