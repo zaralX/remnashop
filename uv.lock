@@ -916,7 +916,6 @@ dependencies = [
     { name = "sqlalchemy", extra = ["mypy"] },
     { name = "taskiq" },
     { name = "taskiq-redis" },
-    { name = "types-qrcode" },
     { name = "uvicorn" },
 ]
 
@@ -950,7 +949,6 @@ requires-dist = [
     { name = "sqlalchemy", extras = ["mypy"], specifier = ">=2.0.0" },
     { name = "taskiq", specifier = "~=0.11.19" },
     { name = "taskiq-redis", specifier = "~=1.1.2" },
-    { name = "types-qrcode" },
     { name = "uvicorn", specifier = ">=0.38.0" },
 ]
 
@@ -1104,18 +1102,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/3b/a8/f9bcc7f1be63af43ef0170a773e2d88817bcc7c9d8769f2228c802826efe/types_cachetools-6.2.0.20251022.tar.gz", hash = "sha256:f1d3c736f0f741e89ec10f0e1b0138625023e21eb33603a930c149e0318c0cef", size = 9608, upload-time = "2025-10-22T03:03:58.16Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/98/2d/8d821ed80f6c2c5b427f650bf4dc25b80676ed63d03388e4b637d2557107/types_cachetools-6.2.0.20251022-py3-none-any.whl", hash = "sha256:698eb17b8f16b661b90624708b6915f33dbac2d185db499ed57e4997e7962cad", size = 9341, upload-time = "2025-10-22T03:03:57.036Z" },
-]
-
-[[package]]
-name = "types-qrcode"
-version = "8.2.0.20250914"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pillow" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/a6/1b/b662d2baa355df5739ca084b0d959a5ce8d0e1bea742ee3e027372f89a56/types_qrcode-8.2.0.20250914.tar.gz", hash = "sha256:fc82e0112095c60c0ef3e403ab2a604a9ae1929c70fb0e708bc1ebfe8ca5c45e", size = 14988, upload-time = "2025-09-14T02:56:59.106Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/46/47/9105e9949a83789b6982bcbab4874ce7804f74fd27e6ab83d0186805b0aa/types_qrcode-8.2.0.20250914-py3-none-any.whl", hash = "sha256:6b992d62f05c2df0422507c5307ddd969c0a4d2ab23863c4217f96226710c308", size = 19849, upload-time = "2025-09-14T02:56:58.353Z" },
 ]
 
 [[package]]

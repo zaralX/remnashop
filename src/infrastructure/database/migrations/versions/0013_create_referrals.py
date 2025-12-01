@@ -50,7 +50,6 @@ def upgrade() -> None:
     op.add_column(
         "users", sa.Column("points", sa.Integer(), nullable=False, server_default=sa.text("0"))
     )
-    op.create_unique_constraint("uq_users_referral_code", "users", ["referral_code"])
 
     conn = op.get_bind()
     ctx = context.get_context()
@@ -64,6 +63,7 @@ def upgrade() -> None:
             {"code": code, "id": user_id},
         )
 
+    op.create_unique_constraint("uq_users_referral_code", "users", ["referral_code"])
     op.alter_column("users", "referral_code", server_default=None)
 
     referral_level_enum = sa.Enum(
